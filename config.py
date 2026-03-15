@@ -7,7 +7,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 MONGO_URL = os.getenv("MONGO_URL", "")
 OWNER_ID = int(os.getenv("OWNER_ID", "0"))
 
-# --- STYLISH MESSAGES (Jo tumne provide kiye) ---
+# --- STYLISH MESSAGES (Clickable Blue Commands added) ---
 START_MSG = """
 `+----------------------------+`
 `|  ❁ 𝖣𝖠𝖱𝖪 𝖴𝖲𝖤𝖱𝖡𝖮𝖳 𝖮𝖭𝖫𝖨𝖭𝖤 ❁ |`
@@ -18,9 +18,10 @@ START_MSG = """
 `+----------------------------+`
 
 **𝗔𝘃𝗮𝗶𝗹𝗮𝗯𝗹𝗲 𝗖𝗼𝗺𝗺𝗮𝗻𝗱𝘀:**
-⚡ `/host` - Login via OTP
-⚡ `/clone` - Login via String
-⚡ `/alive` - Check Bot Status
+⚡ /host - Login via OTP
+⚡ /clone - Login via String
+⚡ /alive - Check Bot Status
+⚡ /panel - Admin Control Panel
 """
 
 LOGIN_SUCCESS = """
@@ -68,4 +69,3 @@ FLIRT = [
     "Kya aapka naam Google hai? Kunki jo bhi main dhoond raha hoon, wo sab aapme hai. 🔍",
     "Do you have a map? I just got lost in your eyes. 🗺️"
 ]
-
