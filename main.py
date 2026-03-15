@@ -16,8 +16,8 @@ from database import (
 # Render fix: ensures config/database are found
 sys.path.append(os.getcwd())
 
-# Bot Client Initialize
-bot = TelegramClient('manager_bot', API_ID, API_HASH).start(bot_token=BOT_TOKEN)
+# Bot Client Initialize (Global define, but start inside loop)
+bot = TelegramClient('manager_bot', API_ID, API_HASH)
 
 @bot.on(events.NewMessage(pattern='/start'))
 async def start(event):
@@ -94,6 +94,8 @@ async def maint(event):
 
 # --- ASYNC LOOP FIX (Render special) ---
 async def run_manager():
+    # Bot ko async context ke andar start kar rahe hain
+    await bot.start(bot_token=BOT_TOKEN)
     print("Manager Bot Started...")
     await bot.run_until_disconnected()
 
