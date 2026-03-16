@@ -133,3 +133,41 @@
         elif cmd == "sexmsg":
             await event.edit("𓀐𓂸🤰🏻 🤱🏻👨‍👩‍👧")
         
+    # --- 3. HEAVY DOT ART (.sex, .face, .strip) ---
+
+        # 1. THE FULL ACT (.sex)
+        elif cmd == "sex":
+            # Braille Frames for Action
+            f1 = "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣤⣤⣤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀\n`Positioning...` 🛠️"
+            f2 = "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣶⣿⣿⣶⣄⠀⠀⠀⠀⠀⠀⠀⠀\n`Getting Closer...` 🔥"
+            f3 = "𓀐𓂸 `Deep Action...` 🔞"
+            f4 = "𓀐𓂸🤰🏻 🤱🏻👨‍👩‍👧 \n**⌬ 𝖲𝖸𝖲𝖳▵𝖬 ▵𝖩𝖠▢▵𝖫𝖠▵𝖤𝖣** 🌊"
+            
+            for f in [f1, f2, f3, f4]:
+                await event.edit(f)
+                await asyncio.sleep(1.5)
+
+        # 2. THE FACE REVEAL (.face)
+        elif cmd == "face":
+            # Your detailed Braille Portrait
+            art = (
+                "⠀⠀⠀⠀⠀⢀⣤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⢤⣤⣀⣀⡀⠀⠀⠀⠀⠀⠀\n"
+                "⠀⠀⠀⠀⢀⡼⠋⠀⣀⠄⡂⠍⣀⣒⣒⠂⠀⠬⠤⠤⠬⠍⠉⠝⠲⣄⡀⠀⠀\n"
+                "⠀⠀⠀⢀⡾⠁⠀⠊⢔⠕⠈⣀⣀⡀⠈⠆⠀⠀⠀⡍⠁⠀⠁⢂⠀⠈⣷⠀⠀\n"
+                "🔞 **⌬ 𝖣𝖨▵𝖳▵ 𝖥𝖠▢▵ 𝖣▵▵▵𝖳▵𝖣**"
+            )
+            await event.edit(art)
+
+        # 3. THE STRIP SHOW (.strip)
+        elif cmd == "strip":
+            # Girl outline transition frames
+            s1 = "⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⡀⠤⠤⠠⡖⠲⣄⣀⠀⠀⠀⠀⠀⠀⠀⠀\n`Unlocking Desires...` 🔓"
+            s2 = (
+                "⠀⠀⠀⠀⠀⡠⠶⣴⣶⣄⠀⠀⠀⢀⣴⣞⣼⣴⣖⣶⣾⡷⣶⣿⣿⣷\n"
+                "⠀⠀⠀⠀⢸⠀⠀⠀⠙⢟⠛⠴⣶⣿⣿⠟⠙⣍⠑⢌⠙⢵⣝⢿⣽⡮⣎⢿\n"
+                "**🔞 𝖲𝖳▵𝖨𝖯𝖯▨𝖭𝖦 𝖢▮𝖬𝖯𝖫▵▵𝖤** 🔥"
+            )
+            for s in [s1, s2]:
+                await event.edit(s)
+                await asyncio.sleep(1.8)
+                      
