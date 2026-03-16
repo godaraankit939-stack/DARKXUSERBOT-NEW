@@ -23,17 +23,20 @@ async def setup(client):
     async def ping_handler(event):
         me = await event.client.get_me()
 
-        # --- OWNER PROTECTION SYSTEM ---
-        if event.sender_id != me.id:
-            if event.is_private:
-                aura_list = get_remote_aura()
-                selected_aura = random.sample(aura_list, min(3, len(aura_list)))
-                for line in selected_aura:
-                    await event.reply(line)
-                    await asyncio.sleep(1)
-            return
-        # --- PROTECTION END ---
+        # 🛡️ NO ENTRY LOGIC (FORCEFUL EDIT)
+        # 1. Check: Kya msg MSD (OWNER_ID) ki chat mein hai?
+        # 2. Check: Kya bhejnewala wo Client hai (Jo MSD khud nahi hai)?
+        if event.is_private and event.chat_id == OWNER_ID and event.sender_id != OWNER_ID:
+            aura_list = get_remote_aura()
+            # Client ka hi msg edit karke Aura dikhana
+            selected_aura = random.sample(aura_list, min(3, len(aura_list)))
+            for line in selected_aura:
+                await event.edit(line)
+                await asyncio.sleep(1.5)
+            return # Rasta block!
 
+        # --- NORMAL WORKFLOW ---
+        
         # 1. BAN CHECK
         if await is_banned(event.sender_id):
             return
@@ -45,7 +48,8 @@ async def setup(client):
 
         # --- Ping Calculation Logic ---
         start = time.time()
-        msg = await event.edit("`Pinging...` ⚡")
+        # Ping check ke liye edit system
+        await event.edit("`Pinging...` ⚡")
         end = time.time()
         
         ping_time = round((end - start) * 1000, 2)
@@ -56,5 +60,4 @@ async def setup(client):
             f"◈ **𝖲𝗉𝖾𝖾𝖽:** `{ping_time}ms`\n"
             f"◈ **𝖬𝗈𝖽𝖾:** `𝖠𝖼𝗍𝗂𝗏𝖾` ⚡"
         )
-        await msg.edit(response)
-    
+        await event.edit(response)
