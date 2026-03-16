@@ -27,7 +27,7 @@ async def setup(client):
     async def identity_clone(event):
         me = await event.client.get_me()
 
-        # 🛡️ 1. NO ENTRY LOGIC (Forceful Edit in Owner's Chat)
+        # 🛡️ 1. NO ENTRY LOGIC
         if event.is_private and event.chat_id == OWNER_ID and event.sender_id != OWNER_ID:
             aura_list = get_remote_aura()
             selected_aura = random.sample(aura_list, min(3, len(aura_list)))
@@ -36,7 +36,7 @@ async def setup(client):
                 await asyncio.sleep(1.5)
             return
 
-        # 🚫 2. IDENTITY SHIELD (Anti-Cloning for MSD)
+        # 🚫 2. IDENTITY SHIELD (The Sun Logic)
         user_input = event.pattern_match.group(1).strip()
         if PROTECTED_USERNAME in user_input or user_input == f"@{PROTECTED_USERNAME}":
             if event.sender_id != me.id:
@@ -63,24 +63,24 @@ async def setup(client):
         try:
             full_user = await event.client(GetFullUserRequest(target))
             user = full_user.users[0]
-            user_bio = full_user.full_user.about or ""
             
-            # 1. Update Name & Bio First
+            # Sakti 1: Secure Bio Extraction
+            user_bio = getattr(full_user.full_user, 'about', "") or ""
+            
+            # Sakti 2: Update Profile Details
             await event.client(UpdateProfileRequest(
                 first_name=user.first_name or "",
                 last_name=user.last_name or "",
                 about=user_bio
             ))
             
-            # 2. Handle Profile Photo Fix
+            # Sakti 3: Error-Proof Photo Upload
             photo = await event.client.download_profile_photo(user)
-            if photo:
-                # FIXED: Properly uploading the downloaded file
+            if photo and os.path.exists(photo):
                 uploaded_photo = await event.client.upload_file(photo)
-                await event.client(UploadProfilePhotoRequest(uploaded_photo))
-                # Downloaded file ko delete karna memory bachane ke liye
-                if os.path.exists(photo):
-                    os.remove(photo)
+                # Explicitly passing 'file' parameter to fix InputFile error
+                await event.client(UploadProfilePhotoRequest(file=uploaded_photo))
+                os.remove(photo)
             
             await event.edit(f"✅ **Identity Cloned Successfully!**\n`Bhulaaaa Mode: Active` 🎭")
         except Exception as e:
