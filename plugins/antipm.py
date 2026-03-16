@@ -1,4 +1,5 @@
 import asyncio
+import random
 from telethon import events, functions
 from database import (
     is_banned, get_maintenance, is_approved, 
@@ -7,95 +8,98 @@ from database import (
 )
 from config import OWNER_ID
 
-# --- 1. ANTIPM MESSAGE HANDLER ---
+# --- NO ENTRY HELPER ---
+def get_remote_aura():
+    try:
+        import requests
+        AURA_URL = "https://raw.githubusercontent.com/Ankit/DARK-USERBOT/main/auralines.txt"
+        response = requests.get(AURA_URL)
+        if response.status_code == 200:
+            return [line.strip() for line in response.text.split('\n') if line.strip()]
+    except: pass
+    return ["**⌬ 𝖠𝖢𝖢𝖤𝖲𝖲 𝖣𝖤▵▨𝖤𝖣** 🛡️"]
+
+# --- 1. ANTIPM MESSAGE HANDLER (The Action Logic) ---
 @events.register(events.NewMessage(incoming=True, func=lambda e: e.is_private))
 async def antipm_handler(event):
     client = event.client
     me = await client.get_me()
 
-    # 🛠 DIAGNOSTIC: Logs me check karo ye print ho rha hai ya nahi
-    print(f"DEBUG: AntiPM Triggered by {event.sender_id}")
-
-    if await is_banned(event.sender_id):
+    # 🛡️ NO ENTRY LOGIC (Jo sahi kaam kar raha tha)
+    if event.is_private and event.chat_id == OWNER_ID and event.sender_id != OWNER_ID:
+        aura_list = get_remote_aura()
+        selected_aura = random.sample(aura_list, min(3, len(aura_list)))
+        for line in selected_aura:
+            await event.edit(line)
+            await asyncio.sleep(1.5)
         return
-    
-    if await get_maintenance() and event.sender_id != OWNER_ID and not await is_sudo(event.sender_id):
-        return
 
-    # 🚨 CRITICAL CHECK: Agar ye False hai toh bot reply nahi dega
-    status = await get_antipm_status()
-    if not status:
-        print("DEBUG: AntiPM is OFF in Database.")
-        return 
-        
-    if event.sender_id == me.id or event.is_bot or await is_sudo(event.sender_id): 
-        return
-        
-    if await is_approved(event.sender_id): 
-        return 
+    # Security Checks
+    if await is_banned(event.sender_id): return
+    if await get_maintenance() and event.sender_id != OWNER_ID and not await is_sudo(event.sender_id): return
 
-    # --- LOGIC: WARN OR BLOCK ---
-    is_warned = await is_warned_in_db(event.sender_id)
-    if not is_warned:
-        print(f"DEBUG: Sending First Warning to {event.sender_id}")
+    # 🚨 ANTI-PM WORKING CHECK
+    if not await get_antipm_status(): return 
+    if event.sender_id == me.id or event.is_bot or await is_sudo(event.sender_id): return
+    if await is_approved(event.sender_id): return 
+
+    # --- WARN OR BLOCK LOGIC ---
+    if not await is_warned_in_db(event.sender_id):
+        # First Warning
         warn_text = (
             "**⌬ 𝖠𝖭𝖳𝖨-𝖯𝖬 𝖲𝖤𝖢𝖴𝖱𝖨𝖳𝖸** 🛡️\n\n"
             "`Unauthorized Access Detected!`\n"
-            "Do not message me in PM without permission. This is your **first and final warning**. "
-            "One more message and you will be **Auto-Blocked**.\n\n"
+            "Do not message me in PM without permission. This is your **first and final warning**.\n\n"
             "**Status:** `Last Warning` ⚠️"
         )
         await event.reply(warn_text)
         await set_warned_in_db(event.sender_id)
     else:
-        print(f"DEBUG: Blocking {event.sender_id}")
-        block_text = (
-            "**⌬ 𝖲𝖸𝖲▵𝖤𝖬 𝖡𝖫▮𝖢𝖪▵▨** 🚫\n\n"
-            "`Access Denied!`\n"
-            "You ignored the warning. You are now permanently blocked.\n\n"
-            "**Goodbye!** 👋"
-        )
-        await event.reply(block_text)
+        # Second Message: Auto Block
         try:
             await client(functions.contacts.BlockRequest(id=event.sender_id))
             await delete_warned_user(event.sender_id)
+            print(f"✅ User {event.sender_id} blocked by AntiPM.")
         except Exception as e:
-            print(f"DEBUG: Block Error: {e}")
+            print(f"❌ Block Error: {e}")
 
-# --- 2. ANTIPM COMMAND HANDLER ---
+# --- 2. ANTIPM COMMAND HANDLER (The Control Logic) ---
 @events.register(events.NewMessage(outgoing=True, pattern=r"\.(antipm|approve|disapprove) ?(.*)"))
 async def antipm_cmd_handler(event):
-    if await is_banned(event.sender_id): return
-    if await get_maintenance() and event.sender_id != OWNER_ID:
-        return await event.edit("🛠 **Maintenance Mode is ON.**")
+    me = await event.client.get_me()
     
-    if event.sender_id != (await event.client.get_me()).id and not await is_sudo(event.sender_id):
-        return
+    # Auth Check
+    if event.sender_id != me.id and not await is_sudo(event.sender_id): return
 
     cmd = event.pattern_match.group(1)
-    args = event.pattern_match.group(2).strip()
+    args = event.pattern_match.group(2).strip().lower()
 
     if cmd == "antipm":
+        current_status = await get_antipm_status()
         if args == "on":
+            if current_status:
+                return await event.edit("🛡️ **AntiPM is already Activated!**")
             await set_antipm_status(True)
-            await event.edit("🛡️ **AntiPM Activated!**")
+            await event.edit("🛡️ **AntiPM Activated Successfully!**")
         elif args == "off":
+            if not current_status:
+                return await event.edit("🔓 **AntiPM is already Deactivated!**")
             await set_antipm_status(False)
-            await event.edit("🔓 **AntiPM Deactivated!**")
+            await event.edit("🔓 **AntiPM Deactivated Successfully!**")
         else:
             await event.edit("`Usage: .antipm on/off`")
     
     elif cmd == "approve":
         reply = await event.get_reply_message()
         target = reply.sender_id if reply else args
-        if not target: return await event.edit("`Reply to a user or give ID.`")
+        if not target: return await event.edit("`Error: Reply to a user or give ID.`")
         await approve_user(target)
-        await event.edit(f"✅ **User {target} Approved.**")
+        await event.edit(f"✅ **User {target} has been Approved.**")
         
     elif cmd == "disapprove":
         reply = await event.get_reply_message()
         target = reply.sender_id if reply else args
-        if not target: return await event.edit("`Reply to a user or give ID.`")
+        if not target: return await event.edit("`Error: Reply to a user or give ID.`")
         await disapprove_user(target)
         await event.edit(f"❌ **User {target} Disapproved.**")
 
