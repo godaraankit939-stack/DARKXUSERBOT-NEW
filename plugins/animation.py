@@ -1,5 +1,14 @@
-    # --- 1. TECH, HACKER & FUN SET ---
-    @client.on(events.NewMessage(outgoing=True, pattern=r"\.(love|hack|nuke|cyber|brain|slap|shoot|kill|ghost|earth|moon|heart|toss|error|server|virus|rain|blow|cum|climax|pounding|sexmsg|bdsm|horny|sex|face|strip)"))
+import asyncio
+import random  # <--- Ye zaroori hai .toss aur .brain ke liye
+from telethon import events, functions
+from database import is_banned, get_maintenance, is_sudo
+from config import OWNER_ID
+# Universal Auth Check
+async def is_authorized(event):
+    return event.sender_id == OWNER_ID or await is_sudo(event.sender_id)
+    
+# --- 1. TECH, HACKER & FUN SET ---
+    @client.on(events.NewMessage(outgoing=True, pattern=r"^\.(love|hack|nuke|cyber|brain|slap|shoot|kill|ghost|earth|moon|heart|toss|error|server|virus|rain|blow|cum|climax|pounding|sexmsg|bdsm|horny|sex|face|strip)"))
 
     async def tech_fun_handler(event):
         # 🛡️ SECURITY & MAINTENANCE CHECK
