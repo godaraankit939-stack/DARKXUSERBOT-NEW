@@ -17,28 +17,30 @@ async def setup(client):
     async def identity_clone(event):
         me = await event.client.get_me()
         
-        # 🛡️ 1. NO ENTRY LOGIC (Owner's Chat Protection)
-                # 🛡️ NO-ENTRY LOGIC (Forceful Edit)
+                # 🛡️ 1. NO ENTRY LOGIC (Forceful Edit)
+        # MSD ki chat mein agar koi aur command likhe toh Aura Edit chalu
         if event.is_private and event.chat_id == OWNER_ID and event.sender_id != OWNER_ID:
             aura_list = get_remote_aura()
-            # Sirf 3 line ka forceful edit
             for line in random.sample(aura_list, 3):
-                await event.edit(line) # Text change yahan hoga
+                await event.edit(line)
                 await asyncio.sleep(1.5)
-            return # Cmd yahan stop ho jayegi
+            return # Yahan cmd khatam, aage kuch nahi chalega
 
-        # 🚫 IDENTITY SHIELD (Strict ID Check)
+        # 🚫 2. IDENTITY SHIELD (Strict ID Check)
         try:
+            # Target nikalne ka logic (is se pehle target define hona chahiye)
             target_obj = await event.client.get_entity(target)
-            if target_obj.id == OWNER_ID: # Direct ID match
-                if event.sender_id != me.id:
-                    return await event.edit("👑 **The Sun is only one. You cannot mirror the Sun.**",
-                    "⚜️ **Master's legacy is encrypted. No one can copy the Sun.**")
-        except:
-            pass
+            
+            # Agar target Owner (MSD) hai aur chalane wala koi aur hai
+            if target_obj.id == OWNER_ID and event.sender_id != me.id:
+                shield_lines = [
+                    "👑 **The Sun is only one. You cannot mirror the Sun.**",
+                    "⚜️ **Master's legacy is encrypted. No one can copy the Sun.**"
+                ]
                 return await event.edit(random.choice(shield_lines))
-        except Exception:
-            pass # Target invalid ho toh aage badho
+        except Exception as e:
+            # Agar target invalid hai toh error dikhao ya ignore karo
+            pass 
 
         # 🛠️ 3. BAN & MAINTENANCE CHECK
         if await is_banned(event.sender_id): return
