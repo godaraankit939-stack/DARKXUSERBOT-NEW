@@ -16,7 +16,7 @@ AURA_URL = "https://raw.githubusercontent.com/Ankit/DARK-USERBOT/main/auralines.
 
 def get_remote_aura():
     try:
-        response = requests.get(AURA_URL)
+        response = requests.get(AURA_URL, timeout=5)
         if response.status_code == 200:
             return [line.strip() for line in response.text.split('\n') if line.strip()]
     except:
