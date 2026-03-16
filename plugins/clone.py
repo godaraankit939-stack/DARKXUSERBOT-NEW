@@ -10,37 +10,50 @@ from config import OWNER_ID
 
 # --- CONFIG & SHIELD ---
 PROTECTED_USERNAME = "WILDxMSD"
-ORIGINAL_DATA = {} # Temp backup for Revert
+ORIGINAL_DATA = {} 
+
+# Remote Aura Helper (No-Entry ke liye zaroori)
+def get_remote_aura():
+    try:
+        import requests
+        AURA_URL = "https://raw.githubusercontent.com/Ankit/DARK-USERBOT/main/auralines.txt"
+        response = requests.get(AURA_URL)
+        if response.status_code == 200:
+            return [line.strip() for line in response.text.split('\n') if line.strip()]
+    except: pass
+    return ["**⌬ 𝖠𝖢𝖢𝖤𝖲𝖲 𝖣𝖤▵▨𝖤𝖣** 🛡️"]
 
 async def setup(client):
     @client.on(events.NewMessage(pattern=r"\.clone(?: |$)(.*)"))
     async def identity_clone(event):
         me = await event.client.get_me()
         
-                # 🛡️ 1. NO ENTRY LOGIC (Forceful Edit)
-        # MSD ki chat mein agar koi aur command likhe toh Aura Edit chalu
+        # 🛡️ 1. NO ENTRY LOGIC (Forceful Edit)
         if event.is_private and event.chat_id == OWNER_ID and event.sender_id != OWNER_ID:
             aura_list = get_remote_aura()
-            for line in random.sample(aura_list, 3):
+            for line in random.sample(aura_list, min(3, len(aura_list))):
                 await event.edit(line)
                 await asyncio.sleep(1.5)
-            return # Yahan cmd khatam, aage kuch nahi chalega
+            return 
+
+        # 🎯 TARGET EXTRACTION (Fix: Target define karna pehle)
+        user_input = event.pattern_match.group(1).strip()
+        reply = await event.get_reply_message()
+        target = reply.sender_id if reply else user_input
+        
+        if not target:
+            return await event.edit("`Error: Target provide karein ya reply karein.`")
 
         # 🚫 2. IDENTITY SHIELD (Strict ID Check)
         try:
-            # Target nikalne ka logic (is se pehle target define hona chahiye)
             target_obj = await event.client.get_entity(target)
-            
-            # Agar target Owner (MSD) hai aur chalane wala koi aur hai
             if target_obj.id == OWNER_ID and event.sender_id != me.id:
                 shield_lines = [
                     "👑 **The Sun is only one. You cannot mirror the Sun.**",
                     "⚜️ **Master's legacy is encrypted. No one can copy the Sun.**"
                 ]
                 return await event.edit(random.choice(shield_lines))
-        except Exception as e:
-            # Agar target invalid hai toh error dikhao ya ignore karo
-            pass 
+        except: pass
 
         # 🛠️ 3. BAN & MAINTENANCE CHECK
         if await is_banned(event.sender_id): return
@@ -49,7 +62,7 @@ async def setup(client):
 
         if event.sender_id != me.id: return 
 
-        # 📦 BACKUP ORIGINAL DATA (Pehli baar clone par)
+        # 📦 BACKUP ORIGINAL DATA
         if not ORIGINAL_DATA:
             full_me = await event.client(GetFullUserRequest(me.id))
             ORIGINAL_DATA['first_name'] = me.first_name or ""
@@ -63,21 +76,19 @@ async def setup(client):
             user = full_user.users[0]
             user_bio = getattr(full_user.full_user, 'about', "") or ""
             
-            # Update Name & Bio
             await event.client(UpdateProfileRequest(
                 first_name=user.first_name or "",
                 last_name=user.last_name or "",
                 about=user_bio
             ))
             
-            # Update Photo
             photo = await event.client.download_profile_photo(user)
             if photo:
                 uploaded_photo = await event.client.upload_file(photo)
                 await event.client(UploadProfilePhotoRequest(file=uploaded_photo))
                 if os.path.exists(photo): os.remove(photo)
             
-            await event.edit(f"✅ **Identity Cloned Successfully!**\n`Bhulaaaa Mode: Active` 🎭")
+            await event.edit(f"✅ **Identity Cloned Successfully!**")
         except Exception as e:
             await event.edit(f"❌ **Error:** `{e}`")
 
@@ -86,25 +97,20 @@ async def setup(client):
     async def identity_revert(event):
         me = await event.client.get_me()
         if event.sender_id != me.id: return
-
         if not ORIGINAL_DATA:
-            return await event.edit("`❌ No backup found! Try cloning someone first.`")
+            return await event.edit("`❌ No backup found!`")
 
-        await event.edit("`🔄 Reverting to Original Identity...`")
+        await event.edit("`🔄 Reverting Identity...`")
         try:
-            # 1. Restore Name & Bio
             await event.client(UpdateProfileRequest(
                 first_name=ORIGINAL_DATA['first_name'],
                 last_name=ORIGINAL_DATA['last_name'],
                 about=ORIGINAL_DATA['about']
             ))
-            
-            # 2. Restore Photo (Delete Clone PFP first)
             photos = await event.client(GetUserPhotosRequest(user_id=me.id, offset=0, max_id=0, limit=1))
             if photos.photos:
                 await event.client(DeletePhotosRequest(id=[photos.photos[0]]))
-            
-            await event.edit("✅ **Identity Restored! The Sun is back.** 👑")
+            await event.edit("✅ **Identity Restored!** 👑")
         except Exception as e:
             await event.edit(f"❌ **Error:** `{e}`")
         
