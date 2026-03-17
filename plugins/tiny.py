@@ -109,4 +109,12 @@ async def tiny_handler(event):
                 os.remove(input_path)
 
             for f in ["tiny.jpg", "tiny.webp"]:
-                if
+                if os.path.exists(f):
+                    os.remove(f)
+
+        except:
+            pass
+
+
+async def setup(client):
+    client.add_event_handler(tiny_handler)
