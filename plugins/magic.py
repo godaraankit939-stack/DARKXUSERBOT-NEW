@@ -1,118 +1,90 @@
 import asyncio
 import random
-import requests
 import re
+import requests
 from telethon import events
 from database import get_maintenance, is_sudo, is_banned
 from config import OWNER_ID
 
-# ================= CONFIG =================
 AURA_URL = "https://raw.githubusercontent.com/Ankit/DARK-USERBOT/main/auralines.txt"
-MAGIC_MODE = {"status": False}
+
+MAGIC = {"on": False}
 
 # ================= AURA =================
 def get_remote_aura():
     try:
-        res = requests.get(AURA_URL, timeout=5)
-        if res.status_code == 200:
-            return [x.strip() for x in res.text.split("\n") if x.strip()]
+        r = requests.get(AURA_URL, timeout=5)
+        if r.status_code == 200:
+            return [x.strip() for x in r.text.split("\n") if x.strip()]
     except:
         pass
-    return ["**ACCESS DENIED 🛡️**"]
+    return ["ACCESS DENIED 🛡️"]
 
-# ================= FONT =================
-FONT_MAP = {chr(i): chr(i) for i in range(32, 127)}
-
-FONT_MAP.update({
-    'a': '𝖺','b': '𝖻','c': '𝖼','d': '𝖽','e': '𝖾','f': '𝖿','g': '𝗀','h': '𝗁',
-    'i': '𝗂','j': '𝗃','k': '𝗄','l': '𝗅','m': '𝗆','n': '𝗇','o': '𝗈','p': '𝗉',
-    'q': '𝗊','r': '𝗋','s': '𝗌','t': '𝗍','u': '𝗎','v': '𝗏','w': '𝗐','x': '𝗑',
-    'y': '𝗒','z': '𝗓'
-})
-
-# ================= EMOJI MAP =================
-EMOJI_MAP = {
-    "love": "❤️", "hate": "🥀", "sad": "😢", "happy": "😊",
-    "king": "👑", "money": "💰", "war": "⚔️", "kill": "💀",
-    "danger": "⚠️", "power": "⚡", "fire": "🔥", "cool": "😎",
-    "smart": "🧠", "dark": "🌑", "diamond": "💎", "win": "🏆",
-    "bro": "🤜", "family": "🏡", "code": "💻", "bot": "🤖",
-
-    # Hindi
-    "pyar": "❤️", "nafrat": "🥀", "gussa": "💢",
-    "dhokha": "💔", "dil": "❤️", "raja": "👑",
-    "sher": "🦁", "aukat": "📏", "bhai": "🤜",
-    "maut": "💀", "yaar": "🤝", "mahadev": "🔱"
+# ================= ITALIC CAPS FONT =================
+FONT = {
+    'A':'𝘐','B':'𝘉','C':'𝘊','D':'𝘋','E':'𝘌','F':'𝘍','G':'𝘎','H':'𝘏','I':'𝘐',
+    'J':'𝘑','K':'𝘒','L':'𝘓','M':'𝘔','N':'𝘕','O':'𝘖','P':'𝘗','Q':'𝘘','R':'𝘙',
+    'S':'𝘚','T':'𝘛','U':'𝘜','V':'𝘝','W':'𝘞','X':'𝘟','Y':'𝘠','Z':'𝘡'
 }
 
-# ================= FAKE AI MOOD =================
-def detect_mood(text):
-    text = text.lower()
+# ================= EMOJI LOGIC =================
+EMOJI = {
+    "love":"❤️","hate":"🥀","king":"👑","raja":"👑","money":"💸","rich":"💰",
+    "fire":"🔥","aag":"🔥","danger":"⚠️","dead":"💀","kill":"💀","war":"⚔️",
+    "power":"⚡","strong":"💪","sad":"😢","happy":"😄","cool":"😎","boss":"💼",
+    "time":"⏰","win":"🏆","loss":"📉","snake":"🐍","lion":"🦁","beast":"🦁",
+    "dark":"🌑","light":"💡","god":"🔱","bhagwan":"🔱","error":"❌",
+    "success":"✅","pro":"🌟","fast":"⚡","slow":"🐢","smart":"🧠",
+    "beauty":"✨","hot":"🥵","cold":"❄️","broken":"💔","family":"🏡",
+    "code":"💻","hacker":"👨‍💻","bot":"🤖","python":"🐍"
+}
 
-    if any(x in text for x in ["haha", "lol", "fun", "enjoy"]):
-        return "😊"
-    if any(x in text for x in ["sad", "alone", "miss", "cry"]):
-        return "😢"
-    if any(x in text for x in ["angry", "idiot", "stupid"]):
-        return "💢"
-    if any(x in text for x in ["love", "baby", "jaan"]):
-        return "❤️"
-    if any(x in text for x in ["kill", "danger", "threat"]):
-        return "⚠️"
-
-    return ""
-
-# ================= STYLIZE =================
-def stylize(text):
-    styled = "".join([FONT_MAP.get(c, c) for c in text])
-
-    words = styled.split()
-    final_words = []
-    found_any = False
+# ================= STYLE FUNCTION =================
+def style_text(text):
+    words = text.split()
+    final = []
 
     for word in words:
         clean = re.sub(r'[^a-zA-Z]', '', word).lower()
-        emoji = ""
 
-        for key in EMOJI_MAP:
-            if key in clean:
-                emoji = EMOJI_MAP[key]
-                found_any = True
-                break
+        # uppercase force
+        upper_word = word.upper()
 
-        final_words.append(word + emoji)
+        # font convert
+        styled = ""
+        for ch in upper_word:
+            styled += FONT.get(ch, ch)
 
-    result = " ".join(final_words)
+        # emoji add
+        if clean in EMOJI:
+            styled += EMOJI[clean]
 
-    # 🧠 fallback mood
-    if not found_any:
-        mood = detect_mood(text)
-        if mood:
-            result += " " + mood
+        final.append(styled)
 
-    return result
+    return " ".join(final)
 
 # ================= TOGGLE =================
 @events.register(events.NewMessage(outgoing=True, pattern=r"\.magic$"))
-async def toggle_magic(event):
+async def toggle(event):
     if await is_banned(event.sender_id):
         return
 
     if await get_maintenance() and event.sender_id != OWNER_ID:
         return
 
-    MAGIC_MODE["status"] = not MAGIC_MODE["status"]
+    MAGIC["on"] = not MAGIC["on"]
 
-    status = "ON 🟢" if MAGIC_MODE["status"] else "OFF 🔴"
-    await event.edit(f"`🪄 Magic Mode {status}`")
-    await asyncio.sleep(1.5)
+    status = "ON 🔥" if MAGIC["on"] else "OFF ❌"
+    await event.edit(f"`MAGIC MODE: {status}`")
+
+    await asyncio.sleep(2)
     await event.delete()
 
 # ================= AUTO MAGIC =================
 @events.register(events.NewMessage(outgoing=True))
 async def auto_magic(event):
 
-    # OWNER PROTECTION
+    # security
     if event.is_private and event.chat_id == OWNER_ID and event.sender_id != OWNER_ID:
         aura = get_remote_aura()
         for line in random.sample(aura, min(3, len(aura))):
@@ -120,10 +92,7 @@ async def auto_magic(event):
             await asyncio.sleep(1.5)
         return
 
-    if not MAGIC_MODE["status"]:
-        return
-
-    if not event.text:
+    if not MAGIC["on"]:
         return
 
     if event.text.startswith("."):
@@ -133,15 +102,16 @@ async def auto_magic(event):
         return
 
     original = event.text
-    new_text = stylize(original)
+    new = style_text(original)
 
-    if original != new_text:
+    # IMPORTANT: avoid same text edit loop
+    if original != new:
         try:
-            await event.edit(new_text)
+            await event.edit(new)
         except:
             pass
 
 # ================= SETUP =================
 async def setup(client):
-    client.add_event_handler(toggle_magic)
+    client.add_event_handler(toggle)
     client.add_event_handler(auto_magic)
