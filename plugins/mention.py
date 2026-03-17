@@ -7,11 +7,10 @@ from config import OWNER_ID
 
 # --- CONFIG ---
 AURA_URL = "https://raw.githubusercontent.com/Ankit/DARK-USERBOT/main/auralines.txt"
-# Expanded Emoji List
 EMOJIS = [
     "🔥", "✨", "💀", "⚡", "🌟", "🛡️", "👑", "💎", "🎯", "🚀", 
     "🦁", "🦾", "🖤", "❄️", "👺", "🧿", "🌀", "🩸", "🧊", "🛸", 
-    "🪐", "🎭", "🗡️", "🚩", "🎸", "🎰", "🧨", "🧿", "🔱"
+    "🪐", "🎭", "🗡️", "🚩", "🎸", "🎰", "🧨", "🔱", "🐍", "🎐"
 ]
 
 def get_remote_aura():
@@ -51,21 +50,32 @@ async def tagger_cmd(event):
 
     for i in range(0, len(members), 5):
         chunk = members[i:i+5]
-        mention_text = ""
-        for user in chunk:
-            prefix = random.choice(EMOJIS) if ("e" in cmd or "alle" in cmd) else ""
-            if user.username:
-                mention_text += f"{prefix} @{user.username} "
-            else:
-                mention_text += f"{prefix} [{user.first_name}](tg://user?id={user.id}) "
+        mention_list = []
         
-        final_msg = f"{mention_text}\n{args}" if args else mention_text
+        for user in chunk:
+            # Full Name Logic
+            full_name = f"{user.first_name} {user.last_name or ''}".strip()
+            # Random Emoji
+            emoji = random.choice(EMOJIS)
+            
+            # Formatting Logic
+            if "e" in cmd or "alle" in cmd:
+                # Mention hidden inside Emoji
+                m = f"[{emoji}](tg://user?id={user.id})"
+            else:
+                # Mention hidden inside Full Name
+                m = f"[{full_name}](tg://user?id={user.id})"
+            mention_list.append(m)
+        
+        # Structure: Text on top, Mentions below
+        mention_text = " ".join(mention_list)
+        final_msg = f"{args}\n\n{mention_text}" if args else mention_text
+        
         await event.respond(final_msg)
         await asyncio.sleep(2)
 
 @events.register(events.NewMessage(pattern=r"\.mention ?(.*)"))
 async def mention_cmd(event):
-    # 🛡️ NO ENTRY / SECURITY
     if event.is_private and event.chat_id == OWNER_ID and event.sender_id != OWNER_ID:
         aura = get_remote_aura()
         for line in random.sample(aura, 3):
@@ -80,7 +90,6 @@ async def mention_cmd(event):
     input_str = event.pattern_match.group(1).strip()
     reply = await event.get_reply_message()
     
-    # Targeting Logic
     target_user = None
     text_to_send = ""
 
@@ -93,21 +102,13 @@ async def mention_cmd(event):
             target_user = await event.client.get_entity(parts[0])
             text_to_send = parts[1] if len(parts) > 1 else "Hehe"
         except:
-            return await event.edit("`Error: Invalid user or username!`")
+            return await event.edit("`Error: Invalid user!`")
     
     if not target_user:
-        return await event.edit("`Error: Reply to someone or provide a username!`")
+        return await event.edit("`Error: No target user found!`")
 
-    # Emoji Selection
-    emoji = random.choice(EMOJIS)
-    
-    # Creating Mention Link
-    if target_user.username:
-        mention = f"[{text_to_send}](tg://user?id={target_user.id})"
-        final_mention = f"{emoji} {mention}"
-    else:
-        mention = f"[{text_to_send}](tg://user?id={target_user.id})"
-        final_mention = f"{emoji} {mention}"
+    # Mention hidden inside text (No random emoji here as requested)
+    final_mention = f"[{text_to_send}](tg://user?id={target_user.id})"
 
     await event.edit(final_mention)
 
@@ -115,4 +116,4 @@ async def mention_cmd(event):
 async def setup(client):
     client.add_event_handler(tagger_cmd)
     client.add_event_handler(mention_cmd)
-      
+        
