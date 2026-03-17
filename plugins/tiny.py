@@ -30,58 +30,70 @@ async def tiny_image_cmd(event):
             await asyncio.sleep(1.5)
         return
 
-    # 🛠️ 2. SECURITY CHECKS
+    # 🛠️ 2. BAN & MAINTENANCE & SUDO CHECK
     if await is_banned(event.sender_id): return
     if await get_maintenance() and event.sender_id != OWNER_ID and not await is_sudo(event.sender_id):
         return await event.edit("`System Status: Maintenance Mode.`")
 
     reply = await event.get_reply_message()
+    
+    # Validation
     if not reply or not (reply.sticker or reply.photo):
-        return await event.edit("`Error: Reply to a sticker or photo!`")
+        return await event.edit("`Error: Reply to a static sticker or photo!`")
+    
+    # Animated Sticker check (Advanced safety)
+    if reply.sticker and reply.sticker.animated:
+        return await event.edit("`Error: Animated stickers (TGS/Video) are not supported by Tiny.`")
 
-    await event.edit("`🖌️ Making it tiny...`")
+    status = await event.edit("`🖌️ Processing...`")
 
     try:
-        # 📂 Step 1: Download media to memory
+        # 📂 Step 1: Download to BytesIO (In-memory)
         media_bytes = await event.client.download_media(reply, file=io.BytesIO())
         media_bytes.seek(0)
         
-        # 🛠️ Step 2: Load with Pillow
-        img = Image.open(media_bytes)
+        # 🛠️ Step 2: Open and Convert for Identification Fix
+        img = Image.open(media_bytes).convert("RGBA")
         width, height = img.size
         
-        # 📉 Step 3: Resize (Reduce by 50%)
-        # Tiny logic: Current size / 2
-        new_width = int(width / 2)
-        new_height = int(height / 2)
+        # 📉 Step 3: Recursive Resizing (Reduce by 50%)
+        # Logic: Ensuring it stays at least 1px to avoid crash
+        new_width = max(1, int(width / 2))
+        new_height = max(1, int(height / 2))
         
-        # Prevent image from becoming 0x0
-        if new_width == 0 or new_height == 0:
-            return await event.edit("`Error: Image is already too tiny!`")
-            
-        resized_img = img.resize((new_width, new_height), Image.ANTIALIAS)
+        # Using LANCZOS for high quality downscaling
+        resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
         
-        # 💾 Step 4: Save resized image to memory
+        # 💾 Step 4: Saving based on original format
         output_bytes = io.BytesIO()
         
-        # Handle Sticker (WEBP) vs Photo (JPEG/PNG)
         if reply.sticker:
+            # Re-saving as WebP for Sticker effect
             resized_img.save(output_bytes, format="WEBP")
             output_bytes.seek(0)
-            # Send as sticker
-            await event.client.send_file(event.chat_id, output_bytes, reply_to=reply, force_document=False)
+            await event.client.send_file(
+                event.chat_id, 
+                output_bytes, 
+                reply_to=reply, 
+                force_document=False
+            )
         else:
+            # Saving as PNG for Photos
             resized_img.save(output_bytes, format="PNG")
             output_bytes.seek(0)
-            # Send as photo
-            await event.client.send_file(event.chat_id, output_bytes, reply_to=reply, force_document=False)
+            await event.client.send_file(
+                event.chat_id, 
+                output_bytes, 
+                reply_to=reply, 
+                force_document=False
+            )
 
-        await event.delete() # Delete command msg
+        await status.delete()
 
     except Exception as e:
-        await event.edit(f"❌ `Error: {str(e)}`")
+        await event.edit(f"❌ `Advanced Error: {str(e)}`")
 
 # ================= SETUP =================
 async def setup(client):
     client.add_event_handler(tiny_image_cmd)
-                 
+            
