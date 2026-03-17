@@ -56,7 +56,7 @@ async def ask_gemini(event):
 
     try:
         # 🚀 STABLE ENDPOINT: Gemini 1.5 Flash (V1)
-        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={GEMINI_API_KEY}"
         
         # Adding a system instruction for better results
         payload = {
