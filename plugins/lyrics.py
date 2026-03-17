@@ -4,47 +4,49 @@ import requests
 from telethon import events
 from database import get_maintenance, is_sudo, is_banned
 from config import OWNER_ID
+import os
 
 AURA_URL = "https://raw.githubusercontent.com/Ankit/DARK-USERBOT/main/auralines.txt"
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
 
 def get_remote_aura():
     try:
         response = requests.get(AURA_URL, timeout=5)
         if response.status_code == 200:
             return [line.strip() for line in response.text.split('\n') if line.strip()]
-    except Exception:
+    except:
         pass
-    return ["**⌬ 𝖠𝖢𝖢𝖤𝖲𝖲 𝖣𝖤▵▨𝖤𝖣** 🛡️"]
+    return ["**⌬ ACCESS DENIED 🛡️**"]
+
 
 @events.register(events.NewMessage(pattern=r"\.lyrics ?(.*)"))
 async def lyrics_handler(event):
     client = event.client
     me = await client.get_me()
 
-    # 🛡️ OWNER PROTECTION
+    # OWNER PROTECTION
     if event.is_private and event.chat_id == OWNER_ID and event.sender_id != OWNER_ID:
         aura_list = get_remote_aura()
-        selected_aura = random.sample(aura_list, min(3, len(aura_list)))
-        for line in selected_aura:
+        for line in random.sample(aura_list, min(3, len(aura_list))):
             await event.edit(line)
             await asyncio.sleep(1.5)
         return
 
-    # 🚫 BAN CHECK
     if await is_banned(event.sender_id):
         return
 
-    # 🛠️ MAINTENANCE
     if await get_maintenance() and event.sender_id != OWNER_ID and not await is_sudo(event.sender_id):
         return await event.edit("`System Status: Maintenance Mode Active.`")
-    
-    # 🔐 AUTH CHECK
+
     if event.sender_id != me.id and not await is_sudo(event.sender_id):
         return await event.edit("`Not allowed.`")
 
     song_name = event.pattern_match.group(1).strip()
     if not song_name:
-        return await event.edit("`Error: Please provide a song name (e.g., .lyrics Daku).`")
+        return await event.edit("`Give song name...`")
 
     await event.edit(f"`🎵 Searching lyrics for: {song_name}...`")
 
@@ -52,53 +54,89 @@ async def lyrics_handler(event):
     title = song_name.upper()
     artist = "Unknown Artist"
 
+    # ================= API 1 (Lyrist) =================
     try:
-        # 🎵 SOURCE 1 (Lyrist)
-        try:
-            api_url = "https://lyrist.vercel.app/api/" + song_name.replace(' ', '%20')
-            res = requests.get(api_url, timeout=5)
+        url = "https://lyrist.vercel.app/api/" + song_name.replace(" ", "%20")
+        res = requests.get(url, timeout=5)
 
-            if res.status_code == 200:
-                data = res.json()
-                if data.get("lyrics"):
-                    lyrics_text = data["lyrics"]
-                    title = data.get("title", title)
-                    artist = data.get("artist", artist)
+        if res.status_code == 200:
+            data = res.json()
+            if data.get("lyrics"):
+                lyrics_text = data["lyrics"]
+                title = data.get("title", title)
+                artist = data.get("artist", artist)
+    except:
+        pass
+
+    # ================= AI FALLBACK (OPENAI) =================
+    if not lyrics_text and OPENAI_API_KEY:
+        try:
+            res = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {OPENAI_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "gpt-4o-mini",
+                    "messages": [{
+                        "role": "user",
+                        "content": f"Give full lyrics of the song: {song_name}"
+                    }]
+                },
+                timeout=15
+            )
+
+            data = res.json()
+
+            if "choices" in data:
+                lyrics_text = data["choices"][0]["message"]["content"]
+
         except:
             pass
 
-        # 🎵 SOURCE 2 (Fallback)
-        if not lyrics_text:
-            try:
-                url = "https://api.lyrics.ovh/v1//" + song_name
-                res = requests.get(url, timeout=5)
+    # ================= AI FALLBACK (GEMINI) =================
+    if not lyrics_text and GEMINI_API_KEY:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
 
-                if res.status_code == 200:
-                    data = res.json()
-                    if data.get("lyrics"):
-                        lyrics_text = data["lyrics"]
-            except:
-                pass
+            res = requests.post(
+                url,
+                json={
+                    "contents": [{
+                        "parts": [{
+                            "text": f"Give full lyrics of the song: {song_name}"
+                        }]
+                    }]
+                },
+                timeout=15
+            )
 
-        # ❌ FINAL FAIL
-        if not lyrics_text:
-            return await event.edit("`Error: No lyrics found for this song.`")
+            data = res.json()
 
-        # 🎨 OUTPUT FORMAT
-        header = "╔══════════════════╗\n║  ❁ 𝖫𝖸𝖱𝖨𝖢𝖲 𝖥𝖮𝖴𝖭𝖣 ❁  ║\n╚══════════════════╝\n"
-        meta = "**Song:** `" + str(title) + "`\n**Artist:** `" + str(artist) + "`\n\n"
-        
-        if len(lyrics_text) > 3500:
-            lyrics_text = lyrics_text[:3500] + "\n... (Lyrics truncated)"
-            
-        code_block = "```\n" + str(lyrics_text) + "\n```"
-        
-        final_msg = header + meta + code_block + "\n\n**Powered By DARK-USERBOT** 💀"
+            if "candidates" in data:
+                lyrics_text = data["candidates"][0]["content"]["parts"][0]["text"]
 
-        await event.edit(final_msg)
+        except:
+            pass
 
-    except Exception as e:
-        await event.edit("❌ **Lyrics Failure:** `" + str(e) + "`")
+    # ================= FINAL FAIL =================
+    if not lyrics_text:
+        return await event.edit("`Lyrics not found. Try another song.`")
+
+    # FORMAT OUTPUT
+    header = "╔══════════════════╗\n║  ❁ 𝖫𝖸𝖱𝖨𝖢𝖲 𝖥𝖮𝖴𝖭𝖣 ❁  ║\n╚══════════════════╝\n"
+    meta = "**Song:** `" + str(title) + "`\n**Artist:** `" + str(artist) + "`\n\n"
+
+    if len(lyrics_text) > 3500:
+        lyrics_text = lyrics_text[:3500] + "\n... (Lyrics truncated)"
+
+    code_block = "```\n" + str(lyrics_text) + "\n```"
+
+    final_msg = header + meta + code_block + "\n\n**Powered By DARK-USERBOT 💀**"
+
+    await event.edit(final_msg)
+
 
 async def setup(client):
     client.add_event_handler(lyrics_handler)
