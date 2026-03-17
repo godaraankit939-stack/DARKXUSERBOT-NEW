@@ -6,4 +6,3 @@ beautifulsoup4
 flask
 gunicorn
 motor
-googletrans==3.1.0a0
