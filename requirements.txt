@@ -7,3 +7,4 @@ flask
 gunicorn
 motor
 Pillow
+deep-translator
