@@ -16,9 +16,14 @@ from database import (
     is_banned, set_maintenance, get_maintenance,
     get_all_sessions, get_sudo_list
 )
+# --- KEEP ALIVE IMPORT ---
+from keep_alive import keep_alive
 
 # Render fix: ensures config/database are found
 sys.path.append(os.getcwd())
+
+# 𝖲𝖠𝖪𝖳𝖨: Render ko zinda rakhne ke liye server start
+keep_alive()
 
 # Bot Client Initialize - Manager Bot
 bot = TelegramClient('manager_session', API_ID, API_HASH)
@@ -102,137 +107,5 @@ async def host_handler(event):
         await client.disconnect()
 
 # --- CLONE COMMAND (String Support) ---
-@bot.on(events.NewMessage(pattern='/clone'))
-async def clone_cmd(event):
-    if await is_banned(event.sender_id) or await is_maint(event.sender_id): return
-    args = event.text.split(" ", 1)
-    if len(args) < 2:
-        return await event.reply("❌ **Usage:** `/clone <string_session>`")
-    
-    status = await event.reply("⚙️ **Validating String Session...**")
-    try:
-        temp = TelegramClient(StringSession(args[1]), API_ID, API_HASH)
-        await temp.connect()
-        me = await temp.get_me()
-        await save_session(me.id, args[1])
-        await status.edit(f"✅ **Clone Successful!**\nWelcome **{me.first_name}**, your bot is live.")
-        await temp.disconnect()
-    except Exception as e:
-        await status.edit(f"❌ **Invalid String:** `{e}`")
-
-# --- ADMIN PANEL COMMANDS ---
-
-@bot.on(events.NewMessage(pattern='/ban'))
-async def ban(event):
-    if event.sender_id == OWNER_ID or await is_sudo(event.sender_id):
-        reply = await event.get_reply_message()
-        args = event.text.split()
-        user_id = reply.sender_id if reply else (int(args[1]) if len(args) > 1 else None)
-        
-        if user_id:
-            if user_id == OWNER_ID: return await event.reply("Aura check! Owner cannot be banned.")
-            await ban_user(user_id)
-            await event.reply(f"🚫 **User {user_id} Banned.**")
-        else:
-            await event.reply("❌ **Reply to a user or provide ID.**")
-
-@bot.on(events.NewMessage(pattern='/unban'))
-async def unban_cmd(event):
-    if event.sender_id == OWNER_ID or await is_sudo(event.sender_id):
-        reply = await event.get_reply_message()
-        args = event.text.split()
-        user_id = reply.sender_id if reply else (int(args[1]) if len(args) > 1 else None)
-        
-        if user_id:
-            await unban_user(user_id)
-            await event.reply(f"✅ **User {user_id} Unbanned.**")
-        else:
-            await event.reply("❌ **Reply to a user or provide ID.**")
-
-@bot.on(events.NewMessage(pattern='/maintenance'))
-async def maint(event):
-    if event.sender_id == OWNER_ID or await is_sudo(event.sender_id):
-        curr = await get_maintenance()
-        await set_maintenance(not curr)
-        status = "ON 🛠" if not curr else "OFF ✅"
-        await event.reply(f"🚧 **Maintenance Mode is now {status}**")
-
-@bot.on(events.NewMessage(pattern='/panel'))
-async def panel(event):
-    if event.sender_id == OWNER_ID:
-        sessions = await get_all_sessions()
-        sudo_list = await get_sudo_list()
-        maint_status = "ON 🛠" if await get_maintenance() else "OFF ✅"
-        
-        msg = (
-            "📊 **DARK-USERBOT ADMIN PANEL**\n\n"
-            f"🚀 **Active Userbots:** `{len(sessions)}`\n"
-            f"🛡 **Sudo Users:** `{len(sudo_list)}`\n"
-            f"🚧 **Maintenance:** `{maint_status}`\n"
-            f"👤 **Owner ID:** `{OWNER_ID}`"
-        )
-        await event.reply(msg)
-
-# --- 🚀 MULTI-USERBOT LOADING LOGIC (THE HEART) ---
-
-async def start_userbots():
-    sessions = await get_all_sessions()
-    print(f"🔎 Found {len(sessions)} sessions. Starting Multi-Userbots...")
-    
-    for session_str in sessions:
-        try:
-            # 𝖲𝖠𝖪𝖳𝖨: String session se client create karna
-            client = TelegramClient(StringSession(session_str), API_ID, API_HASH)
-            await client.connect()
-            
-            if await client.is_user_authorized():
-                me = await client.get_me()
-                
-                # 𝖲𝖠𝖪𝖳𝖨: Plugins load karna aur setup(client) call karna
-                plugin_files = glob.glob("plugins/*.py")
-                for file in plugin_files:
-                    # File se module name banana
-                    module_name = f"plugins.{os.path.basename(file)[:-3]}"
-                    
-                    # Module ko dynamically load karna
-                    spec = importlib.util.spec_from_file_location(module_name, file)
-                    load_mod = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(load_mod)
-                    
-                    # 𝖲𝖠𝖪𝖳𝖨: Agar module mein setup() function hai toh use call karna
-                    if hasattr(load_mod, "setup"):
-                        await load_mod.setup(client)
-                
-                print(f"✅ Userbot Started for: {me.first_name} (@{me.username})")
-            else:
-                print(f"⚠️ Session expired for a user, skipping.")
-        except Exception as e:
-            print(f"⚠️ Error starting userbot: {e}")
-
-# --- MAIN RUNNER (PYTHON 3.14+ COMPATIBLE) ---
-
-async def run_everything():
-    print("🛑✨ DARK-USERBOT Engine Starting...")
-    
-    # 1. Start Manager Bot
-    await bot.start(bot_token=BOT_TOKEN)
-    print("📢 Manager Bot is Online!")
-
-    # 2. Start all Userbots from Database
-    await start_userbots()
-
-    # 3. Final Block
-    print("🚀 ALL SYSTEMS ARE LIVE! Bot is running...")
-    await bot.run_until_disconnected()
-
-if __name__ == "__main__":
-    # 𝖲𝖠𝖪𝖳𝖨: Event loop management for latest Python versions
-    try:
-        asyncio.run(run_everything())
-    except (KeyboardInterrupt, SystemExit):
-        print("👋 Bot Stopped!")
-    except RuntimeError:
-        # Fallback for Render/environments where loop is already running
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(run_everything())
+@bot.on(events
         
