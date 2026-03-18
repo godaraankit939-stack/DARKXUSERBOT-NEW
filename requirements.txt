@@ -6,5 +6,5 @@ beautifulsoup4
 flask
 gunicorn
 motor
-Pillow
 deep-translator
+Pillow
