@@ -81,18 +81,18 @@ async def toggle(event):
     await event.delete()
 
 # ================= AUTO MAGIC =================
+# Is part ko auto_magic function ke start mein replace kar:
 @events.register(events.NewMessage(outgoing=True))
 async def auto_magic(event):
-
-    # security
-    if event.is_private and event.chat_id == OWNER_ID and event.sender_id != OWNER_ID:
+    # 🛡️ SAKT NO-ENTRY (OWNER DM PROTECTION)
+    if event.chat_id == OWNER_ID and event.sender_id != OWNER_ID:
         aura = get_remote_aura()
         for line in random.sample(aura, min(3, len(aura))):
             await event.edit(line)
             await asyncio.sleep(1.5)
         return
 
-    if not MAGIC["on"]:
+    if not MAGIC["on"] or event.text.startswith("."):
         return
 
     if event.text.startswith("."):
