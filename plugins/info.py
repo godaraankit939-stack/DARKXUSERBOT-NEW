@@ -4,8 +4,6 @@ import requests
 from datetime import datetime
 from telethon import events, functions, types
 from telethon.tl.functions.users import GetFullUserRequest
-from telethon.tl.functions.messages import GetStickerSetRequest
-from telethon.tl.types import InputStickerSetShortName
 from database import get_maintenance, is_sudo, is_banned
 from config import OWNER_ID
 
@@ -21,13 +19,16 @@ def get_remote_aura():
         pass
     return ["**⌬ 𝖠𝖢𝖢𝖤𝖲𝖲 𝖣𝖤▵▨𝖤𝖣** 🛡️"]
 
+# --- UPDATED ACCOUNT AGE LOGIC (2026 Updated) ---
 def get_account_age(user_id):
-    if user_id < 100000000: return "10+ Years (Ancient)"
-    if user_id < 500000000: return "7-9 Years"
-    if user_id < 1000000000: return "5-6 Years"
-    if user_id < 2000000000: return "2-3 Years"
-    if user_id < 5000000000: return "1-2 Years"
-    return "New Account (Less than 1 Year)"
+    if user_id < 100000000: return "10-12 Years (Ancient)"
+    if user_id < 500000000: return "8-10 Years"
+    if user_id < 1000000000: return "6-7 Years"
+    if user_id < 2000000000: return "4-5 Years"
+    if user_id < 4000000000: return "2-3 Years"
+    if user_id < 6000000000: return "1-2 Years"
+    if user_id < 7500000000: return "Less than 1 Year"
+    return "Freshly Created (New)"
 
 @events.register(events.NewMessage(pattern=r"\.info ?(.*)"))
 async def user_info(event):
@@ -67,28 +68,31 @@ async def user_info(event):
         first_name = user.first_name
         last_name = user.last_name or ""
         username = f"@{user.username}" if user.username else "None"
-        dc_id = user.photo.dc_id if user.photo else "Unknown"
+        dc_id = getattr(user.photo, 'dc_id', "Unknown") if user.photo else "No PFP"
         bio = full_user.full_user.about or "No Bio Provided"
         common_chats = full_user.full_user.common_chats_count
+        
+        # Premium & Verification Check
+        is_premium = "Yes 💎" if getattr(user, 'premium', False) else "No"
+        is_bot = "Yes 🤖" if user.bot else "No"
+        is_verified = "Verified ✅" if getattr(user, 'verified', False) else "No"
+        is_scam = "Yes 🚫" if getattr(user, 'scam', False) else "Clean"
         
         # History & Age
         acc_age = get_account_age(u_id)
         
-        # Sticker Intelligence (Checks for User's Profile Stickers/Packs)
-        sticker_info = "No Public Sticker Packs Found"
-        if hasattr(full_user.full_user, 'profile_stickers') and full_user.full_user.profile_stickers:
-            sticker_info = "Custom Profile Stickers Active"
-
-        # Constructing Report
+        # Constructing Detailed Report
         info_msg = (
             f"👤 **USER INTELLIGENCE REPORT**\n\n"
             f"◈ **Full Name:** `{first_name} {last_name}`\n"
             f"◈ **User ID:** `{u_id}`\n"
             f"◈ **Username:** {username}\n"
+            f"◈ **Premium:** `{is_premium}`\n"
+            f"◈ **Verified:** `{is_verified}`\n"
             f"◈ **Data Center:** `DC-{dc_id}`\n"
             f"◈ **Account Age:** `{acc_age}`\n\n"
-            f"◈ **Common Groups:** `{common_chats}`\n"
-            f"◈ **Stickers:** `{sticker_info}`\n\n"
+            f"◈ **Bot:** `{is_bot}` | **Scam:** `{is_scam}`\n"
+            f"◈ **Common Groups:** `{common_chats}`\n\n"
             f"◈ **Bio:** `{bio}`\n\n"
             f"**Powered By DARK-USERBOT** 💀"
         )
@@ -101,4 +105,4 @@ async def user_info(event):
 # --- SETUP FUNCTION ---
 async def setup(client):
     client.add_event_handler(user_info)
-  
+    
