@@ -1,50 +1,96 @@
 import asyncio
 from telethon import events
-from database import get_maintenance, is_banned
+from database import get_maintenance, is_banned, is_sudo
 from config import OWNER_ID
 
-# --- THE EMPIRE HELP DATABASE ---
-# Isme tu kabhi bhi nayi help add kar sakta hai niche format follow karke
+# --- THE COMPLETE EMPIRE DATABASE (EVERY SINGLE TRIGGER) ---
 HELP_DICT = {
-    "raid": "⚔️ **RAID HELP**\n\n• `.raid [count] [@target/reply]` : Gaaliyo ki baarish.\n• `.sraid [count] [@target/reply]` : Shayri wala vaar.\n• `.rraid` : Ghost Hunter (Auto-Reply).\n• `.fsraid` : Stop all raids.",
-    "spam": "🚀 **SPAM HELP**\n\n• `.spam [count] [text]` : Current chat spam.\n• `.dmspam [count] [@target] [text]` : Target ke DM mein spam.\n• `.fsspam` : Stop all spam.",
-    "purge": "🧹 **PURGE HELP**\n\n• `.purge [count/reply]` : Chat saaf (Delete for All).\n• `.purgemy [count]` : Sirf apne purane msg delete karna.",
-    "mention": "📢 **MENTION HELP**\n\n• `.mention @user [text]` : User mention with text.\n• `.tagall [text]` : Everyone 5x5 simple tag.\n• `.tagalle [text]` : Everyone 5x5 with Emojis.",
-    "utility": "🛠️ **UTILITY HELP**\n\n• `.dic [A] [10]` : Dictionary spellings.\n• `.afk [reason]` : Away mode (Auto-Off on msg).\n• `.create [name]` : Create new GC.\n• `.info [@user]` : User details.",
-    "magic": "🪄 **MAGIC HELP**\n\n• `.magic` : Toggle Mode (On/Off). Cool fonts + Emojis automatically.",
-    "media": "🖼️ **MEDIA HELP**\n\n• `.tiny [reply]` : Shrink Photos/Stickers.\n• `.ss [reply]` : Save View-Once (Destruct) media.\n• `.quotly [reply]` : Text to Sticker.",
-    "misc": "✨ **MISC HELP**\n\n• `.lyrics [song]` : Get lyrics.\n• `.meme` : Generate random meme.\n• `.clone [@user]` : Copy PFP/Name/Bio.",
-    "sudo": "👑 **SUDO HELP**\n\n• `.sudo [reply/@user]` : Add Sudo.\n• `.rsudo [reply/@user]` : Remove Sudo.\n• `.sudos` : Show Sudo list."
+    # ⚔️ ATTACK & SPAM
+    "raid": "⚔️ **RAID HELP**\n• `.raid [count] [target]`\n• `.sraid [count] [target]`\n• `.rraid` (Reply to start)\n• `.drraid` (Stop RRAID)\n• `.fsraid` (Kill loops)",
+    "spam": "🚀 **SPAM HELP**\n• `.spam [count] [text]`\n• `.dmspam [count] [target] [text]`\n• `.fsspam` (Force stop)",
+    
+    # 🧹 CLEANING & ADMIN
+    "purge": "🧹 **PURGE HELP**\n• `.purge [reply]` (All from here)\n• `.purge [count]` (Mix delete)\n• `.purge [count] [reply]` (Upward count)\n• `.purgemy [count]` (Only your msgs)",
+    "sudo": "👑 **SUDO HELP**\n• `.sudo [reply/@user]` : Add\n• `.rsudo [reply/@user]` : Remove\n• `.sudos` : Show Empire List",
+    "antipm": "🚫 **ANTIPM HELP**\n• `.antipm on/off` : Block/Allow unknown DMs.",
+    
+    # 📢 MENTION & TAGGING
+    "mention": "📢 **MENTION HELP**\n• `.mention @user [text]` : Custom mention.\n• `.tagall [text]` : 5x5 Simple tag.\n• `.tagalle [text]` : 5x5 Emoji tag.",
+    
+    # 🖼️ MEDIA & TOOLS
+    "tiny": "🖼️ **TINY HELP**\n• `.tiny [reply]` : Shrink Photos/Stickers to 200px (Normal Image).",
+    "ss": "🛡️ **DESTRUCT HELP**\n• `.ss [reply]` : Save View-Once/Destructing media permanently.",
+    "quotly": "💬 **QUOTLY HELP**\n• `.quotly [reply]` : Message to Sticker.",
+    "clone": "👤 **CLONE HELP**\n• `.clone [@user/reply]` : Copy Name, Bio, and PFP.",
+    "create": "🏗️ **CREATE HELP**\n• `.create [gc name]` : Create a new Group Chat.",
+    "destruct": "💣 **DESTRUCT HELP**\n• `.destruct [text]` : Self-destructing text messages.",
+
+    # 🪄 MAGIC & UTILITY
+    "magic": "🪄 **MAGIC HELP**\n• `.magic` : Toggle Mode. Auto-convert text to Cool Fonts + Emojis.",
+    "autotr": "🌍 **AUTO-TR HELP**\n• `.autotr [lang]` : Real-time ghost translation edit. `.autotr` to OFF.",
+    "dic": "📖 **DICTIONARY HELP**\n• `.dic [A] [limit]` : List spellings starting with alphabet.",
+    "afk": "💤 **AFK HELP**\n• `.afk [reason/optional]` : Away mode. Auto-off on your next message.",
+    "info": "ℹ️ **INFO HELP**\n• `.info [@user/reply]` : Get ID, Name, DC, and Profile details.",
+    "ping": "⚡ **PING HELP**\n• `.ping` : Check bot speed/latency.",
+    "alive": "👑 **ALIVE HELP**\n• `.alive` : Check if bot is working + System Info.",
+
+    # ✨ MISC
+    "lyrics": "🎵 **LYRICS HELP**\n• `.lyrics [song name]` : Find full song lyrics.",
+    "meme": "🤡 **MEME HELP**\n• `.meme` : Generate instant random memes.",
+    "tiny_text": "📐 **TINY TEXT**\n• `.tiny [text]` : Convert text to tiny fonts (if plugin supports).",
+    "translate": "㊙️ **TRANSLATE**\n• `.tr [lang] [reply]` : Manual translation.",
+    "weather": "🌦️ **WEATHER**\n• `.weather [city]` : Get weather info.",
+    "song": "🎧 **SONG**\n• `.song [name]` : Download/Find song.",
+    "restart": "🔄 **RESTART**\n• `.restart` : Reboot the userbot."
+}
+
+# Mapping aliases so any command works in .help
+ALIASES = {
+    "sraid": "raid", "rraid": "raid", "drraid": "raid", "fsraid": "raid",
+    "dmspam": "spam", "fsspam": "spam",
+    "purgemy": "purge",
+    "tagall": "mention", "tagalle": "mention",
+    "rsudo": "sudo", "sudos": "sudo",
+    "tr": "translate"
 }
 
 # ================= 1. .specialhelp (Main Menu) =================
 @events.register(events.NewMessage(pattern=r"\.specialhelp$"))
 async def special_help(event):
-    # 🛡️ NO-ENTRY LOGIC
     if event.chat_id == OWNER_ID and event.sender_id != OWNER_ID:
         await event.edit("**⌬ 𝖠𝖢𝖢𝖤𝖲𝖲 𝖣𝖤▵▨𝖤▣** 🛡️")
         return
+    if await is_banned(event.sender_id):
+        await event.edit("`YOU WERE BANNED BY OWNER!`")
+        return
 
-    help_msg = "👑 **MSD EMPIRE COMMAND CENTER** 👑\n\n"
-    help_msg += "Use `.help [name]` for details:\n\n"
-    help_msg += "`raid`, `spam`, `purge`, `mention`, `utility`, `magic`, `media`, `misc`, `sudo`"
-    
-    await event.edit(help_msg)
+    msg = "👑 **MSD EMPIRE MEGA HELP** 👑\n\n"
+    msg += "Type `.help [command]` for details:\n\n"
+    msg += "⚔️ `raid`, `spam`, `purge`, `mention`\n"
+    msg += "🛠️ `sudo`, `tiny`, `ss`, `magic`, `autotr`\n"
+    msg += "✨ `afk`, `dic`, `clone`, `quotly`, `info`, `lyrics`\n"
+    msg += "⚙️ `ping`, `alive`, `create`, `meme`, `antipm`"
+    await event.edit(msg)
 
-# ================= 2. .help [module] (Specific Details) =================
+# ================= 2. .help [command] =================
 @events.register(events.NewMessage(pattern=r"\.help (.*)"))
 async def individual_help(event):
-    # 🛡️ NO-ENTRY LOGIC
     if event.chat_id == OWNER_ID and event.sender_id != OWNER_ID:
         await event.edit("**⌬ 𝖠𝖢𝖢𝖤𝖲𝖲 𝖣𝖤▵▨𝖤▣** 🛡️")
         return
+    if await is_banned(event.sender_id):
+        await event.edit("`YOU WERE BANNED BY OWNER!`")
+        return
 
-    module = event.pattern_match.group(1).lower().strip()
+    cmd = event.pattern_match.group(1).lower().strip()
     
-    if module in HELP_DICT:
-        await event.edit(HELP_DICT[module])
+    # Check alias first, then direct dict
+    target = ALIASES.get(cmd, cmd)
+    
+    if target in HELP_DICT:
+        await event.edit(HELP_DICT[target])
     else:
-        await event.edit(f"❌ `{module}` naam ka koi module nahi hai lode!")
+        await event.edit(f"❌ `{cmd}` naam ki koi bkc nahi hai system mein!")
         await asyncio.sleep(2)
         await event.delete()
 
@@ -52,4 +98,3 @@ async def individual_help(event):
 async def setup(client):
     client.add_event_handler(special_help)
     client.add_event_handler(individual_help)
-  
