@@ -45,11 +45,11 @@ async def get_target_and_check(event, target):
 @events.register(events.NewMessage(pattern=r"\.raid (\d+) (.*)"))
 async def raid_cmd(event):
     global RAID_RUNNING
-    # 🛡️ NO-ENTRY LOGIC
-    if event.is_private and event.sender_id != OWNER_ID:
-        await event.edit("**⌬ 𝖠𝖢𝖢𝖤𝖲𝖲 𝖣𝖤▵▨𝖤𝖣** 🛡️")
+    # 🛡️ NO-ENTRY LOGIC (OWNER DM PROTECTION)
+    if event.chat_id == OWNER_ID and event.sender_id != OWNER_ID:
+        await event.edit("**⌬ 𝖠𝖢𝖢𝖤𝖲𝖲 𝖣𝖤▵▨𝖤▣** 🛡️")
         return
-
+        
     if await is_banned(event.sender_id): return
     if await get_maintenance() and event.sender_id != OWNER_ID: return
 
@@ -74,10 +74,11 @@ async def raid_cmd(event):
 @events.register(events.NewMessage(pattern=r"\.sraid (\d+) (.*)"))
 async def sraid_cmd(event):
     global RAID_RUNNING
-    # 🛡️ NO-ENTRY LOGIC
-    if event.is_private and event.sender_id != OWNER_ID:
-        await event.edit("**⌬ 𝖠𝖢𝖢𝖤𝖲𝖲 𝖣𝖤▵▨𝖤𝖣** 🛡️")
+    # 🛡️ NO-ENTRY LOGIC (OWNER DM PROTECTION)
+    if event.chat_id == OWNER_ID and event.sender_id != OWNER_ID:
+        await event.edit("**⌬ 𝖠𝖢𝖢𝖤𝖲𝖲 𝖣𝖤▵▨𝖤▣** 🛡️")
         return
+        
 
     if await is_banned(event.sender_id): return
     
@@ -101,10 +102,11 @@ async def sraid_cmd(event):
 # ================= 3. .rraid (Ghost Hunter Mode) =================
 @events.register(events.NewMessage(pattern=r"\.rraid$"))
 async def rraid_on(event):
-    # 🛡️ NO-ENTRY LOGIC
-    if event.is_private and event.sender_id != OWNER_ID:
-        await event.edit("**⌬ 𝖠𝖢𝖢𝖤𝖲𝖲 𝖣𝖤▵▨𝖤𝖣** 🛡️")
+    # 🛡️ NO-ENTRY LOGIC (OWNER DM PROTECTION)
+    if event.chat_id == OWNER_ID and event.sender_id != OWNER_ID:
+        await event.edit("**⌬ 𝖠𝖢𝖢𝖤𝖲𝖲 𝖣𝖤▵▨𝖤▣** 🛡️")
         return
+        
 
     reply = await event.get_reply_message()
     if not reply: return await event.edit("`Reply to the victim to start RRAID!`")
