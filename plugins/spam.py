@@ -20,8 +20,8 @@ SPAM_RUNNING = True
 @events.register(events.NewMessage(pattern=r"\.spam (\d+) (.*)"))
 async def fast_spam(event):
     global SPAM_RUNNING
-    # 🛡️ NO-ENTRY LOGIC (FIXED & WORKING)
-    if event.is_private and event.sender_id != OWNER_ID:
+    # 🛡️ NO-ENTRY LOGIC (OWNER DM PROTECTION)
+    if event.chat_id == OWNER_ID and event.sender_id != OWNER_ID:
         await event.edit("**⌬ 𝖠𝖢𝖢𝖤𝖲𝖲 𝖣𝖤▵▨𝖤𝖣** 🛡️")
         return
 
@@ -44,9 +44,9 @@ async def fast_spam(event):
 @events.register(events.NewMessage(pattern=r"\.dmspam (\d+) (.*)"))
 async def dm_spam_cmd(event):
     global SPAM_RUNNING
-    # 🛡️ NO-ENTRY LOGIC (FIXED & WORKING)
-    if event.is_private and event.sender_id != OWNER_ID:
-        await event.edit("**⌬ 𝖠𝖢𝖢𝖤𝖲𝖲 𝖣𝖤▵▨𝖤𝖣** 🛡️")
+    # 🛡️ NO-ENTRY LOGIC (OWNER DM PROTECTION)
+    if event.chat_id == OWNER_ID and event.sender_id != OWNER_ID:
+        await event.edit("**⌬ 𝖠𝖢𝖢𝖤𝖲𝖲 𝖣𝖤▵▨𝖤▣** 🛡️")
         return
 
     # 🛡️ BAN & MAINTENANCE LOGIC
@@ -95,6 +95,7 @@ async def dm_spam_cmd(event):
 @events.register(events.NewMessage(pattern=r"\.fsspam$"))
 async def force_stop_spam(event):
     global SPAM_RUNNING
+    
     SPAM_RUNNING = False
     await event.edit("`🛑 ALL SPAM TASKS STOPPED IMMEDIATELY!`")
     await asyncio.sleep(1.5)
