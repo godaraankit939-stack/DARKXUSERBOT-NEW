@@ -20,20 +20,20 @@ def get_remote_aura():
 # --- UPDATED HELP MENU ---
 HELP_MENU = """
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃    ⌬ DARK X USERBOT ⌬    ┃
+┃    ⌬ DARK X USERBOT ⌬        ┃
 ┣━━━━━━━━━━━━┳━━━━━━━━━━━━━┫
-┃ ◈ Afk         ◈ Animate  ┃
-┃ ◈ Antipm      ◈ B-Cast   ┃
-┃ ◈ Clone       ◈ Create   ┃
-┃ ◈ Destruct    ◈ Dict     ┃
-┃ ◈ Ask         ◈ Info     ┃
-┃ ◈ Lyrics      ◈ Memify   ┃
-┃ ◈ Mention     ◈ Ping     ┃
-┃ ◈ Quote       ◈ Raid     ┃
-┃ ◈ Tiny        ◈ Trans    ┃
-┃ ◈ Weather     ◈ Magic    ┃
+┃ ◈ Afk         ◈ Animate      ┃
+┃ ◈ Antipm      ◈ B-Cast       ┃
+┃ ◈ Clone       ◈ Create       ┃
+┃ ◈ Destruct    ◈ Dict         ┃
+┃ ◈ Ask         ◈ Info         ┃
+┃ ◈ Lyrics      ◈ Memify       ┃
+┃ ◈ Mention     ◈ Ping         ┃
+┃ ◈ Quote       ◈ Raid         ┃
+┃ ◈ Tiny        ◈ Trans        ┃
+┃ ◈ Weather     ◈ Magic        ┃
 ┣━━━━━━━━━━━━┻━━━━━━━━━━━━━┫
-┃ Powered By : MSD 👑      ┃
+┃ Powered By : MSD 👑          ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 """
 
