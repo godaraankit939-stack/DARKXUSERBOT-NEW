@@ -66,10 +66,10 @@ async def check_fjoin(user_id):
 async def start(event):
     if not event.is_private or await check_ban_and_maint(event): return
     if not await check_fjoin(event.sender_id):
-        msg = "👑 **WELCOME TO DARK EMPIRE** 👑\n\nBhai, aage badhne ke liye dono groups join karle!"
+        msg = "👑 **WELCOME TO DARK EMPIRE** 👑\n\nTO CONTINUE, JOIN THESE CHANNELS!"
         buttons = [
-            [Button.url("📢 Join Channel", INVITE_LINKS[0])],
-            [Button.url("👥 Join Group", INVITE_LINKS[1])],
+            [Button.url("📢 JOIN", INVITE_LINKS[0])],
+            [Button.url("👥 JOIN", INVITE_LINKS[1])],
             [Button.inline("✅ Verify & Start", data="verify_join")]
         ]
         return await event.reply(msg, buttons=buttons)
@@ -78,12 +78,12 @@ async def start(event):
 @bot.on(events.CallbackQuery(data="verify_join"))
 async def verify_callback(event):
     if await is_banned(event.sender_id) and event.sender_id != config.OWNER_ID:
-        return await event.answer("❌ YOU ARE BANNED!", alert=True)
+        return await event.answer("❌ YOU ARE BANNED BY OWNER!", alert=True)
     if await check_fjoin(event.sender_id):
         await event.delete()
         await bot.send_message(event.sender_id, config.START_MSG)
     else:
-        await event.answer("❌ Abe pehle dono join toh kar!", alert=True)
+        await event.answer("❌ JOIN BOTH FOR START!", alert=True)
 
 # 2. ALIVE
 @bot.on(events.NewMessage(pattern=r'^\/alive$'))
