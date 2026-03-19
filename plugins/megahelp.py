@@ -65,12 +65,13 @@ async def special_help(event):
         await event.reply(msg)
 
 # ================= 2. .help [command] =================
-# CRITICAL FIX: Pattern changed so it ONLY triggers when there is a word after .help
+# Pattern changed to r"^\.help\s+(.+)" (Requires a space and a word)
 @events.register(events.NewMessage(pattern=r"^\.help\s+(.+)"))
 async def individual_help(event):
+    # 🛡️ 1. SECURITY CHECKS (OWNER/BAN CHECK)
     if event.is_private and event.chat_id == OWNER_ID and event.sender_id != OWNER_ID:
-        await event.edit("**⌬ 𝖠𝖢𝖢𝖤𝖲𝖲 𝖣𝖤▵▨𝖤▣** 🛡️")
         return
+
     if await is_banned(event.sender_id):
         return
 
@@ -78,11 +79,15 @@ async def individual_help(event):
     target = ALIASES.get(cmd, cmd)
     
     if target in HELP_DICT:
+        # Code block hata diya, ab seedha HELP_DICT ka text jayega (Bold/Markdown)
         try:
+            # Edit mode for Owner/Sudo
             await event.edit(HELP_DICT[target])
         except:
+            # Reply mode for Public users
             await event.reply(HELP_DICT[target])
     else:
+        # Agar command nahi mili toh error message
         err_msg = f"❌ `{cmd}` naam ki koi bkc nahi hai system mein!"
         try:
             await event.edit(err_msg)
@@ -97,4 +102,5 @@ async def individual_help(event):
 async def setup(client):
     client.add_event_handler(special_help)
     client.add_event_handler(individual_help)
+    
     
