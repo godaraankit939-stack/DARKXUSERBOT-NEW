@@ -17,7 +17,8 @@ def get_remote_aura():
         pass
     return ["**⌬ 𝖠𝖢𝖢𝖤𝖲𝖲 𝖣𝖤▵▨𝖤▣** 🛡️", "⌬ `System: God Mode Active` ✨"]
 
-# --- UPDATED HELP MENU (Google -> Ask) ---
+# --- UPDATED HELP MENU ---
+# Iska alignment Telegram par Code Block ke andar hi sahi dikhega
 HELP_MENU = """
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃      ⌬ DARK X USERBOT ⌬      ┃
@@ -50,37 +51,28 @@ async def setup(client):
                 await asyncio.sleep(1.5)
             return
 
-        
-         # 🚫 2. BAN LOGIC
+        # 🚫 2. BAN LOGIC
         if await is_banned(event.sender_id):
-            return await event.edit("`YOU WERE BANNED BY OWNER!`")
-            
+            # Ban user ke liye chup-chap return, koi edit nahi
+            return
 
         # 🛠️ 3. MAINTENANCE LOGIC
         if await get_maintenance() and event.sender_id != OWNER_ID and not await is_sudo(event.sender_id):
             return await event.edit("🛠 **System Status: Maintenance Mode.**")
 
-        # ✅ 4. FINAL SHOW HELP WITH UNLEASH LINE & MAINTENANCE INFO
-        # Powered box ke niche unleash aur maintenance ki sakt lines
+        # ✅ 4. FINAL SHOW HELP (Box in Code Block, Lines in Bold Text)
+        # <code> tag alignment ko fix rakhta hai
         final_help = (
-            HELP_MENU + 
-            "\n**Type** `.help <cmd>` **to ignite the dark power of any command!** ⚡" +
-            "\n\n**⚠️ Under Maintenance:** `ask`, `antipm`, `lyrics`, `tiny` (Coming Soon...)"
+            f"<code>{HELP_MENU}</code>" + 
+            "\n<b>Type</b> <code>.help &lt;cmd&gt;</code> <b>to ignite the dark power of any command!</b> ⚡" +
+            "\n\n<b>⚠️ Under Maintenance:</b> <code>ask</code>, <code>antipm</code>, <code>lyrics</code>, <code>tiny</code> (Coming Soon...)"
         )
         
         try:
-            # Agar bot owner/sudo hai toh message edit karega
-            await event.edit(final_help)
+            # Agar bot owner ka account hai toh edit karega (HTML mode enabled)
+            await event.edit(final_help, parse_mode='html')
         except:
-            # Public users ke liye seedha reply
-            await event.reply(final_help)
-# ================================================
-        
-        try:
-            await event.edit(final_help)
-        except:
-            # Public users ke liye reply mode
-            await event.reply(final_help)
-# ================================================
+            # Agar public user ne command di hai toh reply karega
+            await event.reply(final_help, parse_mode='html')
 
 # ================================================
