@@ -234,47 +234,36 @@ async def panel(event):
         await event.reply(msg)
 
 # --- 🚀 MULTI-USERBOT LOADING LOGIC (THE HEART) ---
-
 async def start_userbots():
     sessions = await get_all_sessions()
     print(f"🔎 Found {len(sessions)} sessions. Starting Multi-Userbots...")
     
     for session_str in sessions:
         try:
-            client = TelegramClient(StringSession(session_str), API_ID, API_HASH)
+            # Agar list aa rahi hai toh second element uthao, warna direct string
+            s_str = session_str[1] if isinstance(session_str, (list, tuple)) else session_str
+            
+            client = TelegramClient(StringSession(s_str), API_ID, API_HASH)
             await client.connect()
             
             if await client.is_user_authorized():
-                me = await client.get_me()
+                # --- PLUGINS LOADING (SAKT FIX) ---
+                import plugins
                 plugin_files = glob.glob("plugins/*.py")
                 for file in plugin_files:
-                    module_name = f"plugins.{os.path.basename(file)[:-3]}"
-                    spec = importlib.util.spec_from_file_location(module_name, file)
-                    load_mod = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(load_mod)
-                    if hasattr(load_mod, "setup"):
-                        await load_mod.setup(client)
-                print(f"✅ Userbot Started for: {me.first_name}")
+                    try:
+                        name = f"plugins.{os.path.basename(file)[:-3]}"
+                        spec = importlib.util.spec_from_file_location(name, file)
+                        mod = importlib.util.module_from_spec(spec)
+                        spec.loader.exec_module(mod)
+                        if hasattr(mod, "setup"):
+                            await mod.setup(client)
+                    except Exception as e:
+                        print(f"⚠️ Plugin {file} failed to load: {e}")
+                
+                print(f"✅ Userbot Started!")
             else:
                 print(f"⚠️ Session expired.")
         except Exception as e:
-            print(f"⚠️ Error starting userbot: {e}")
-
-# --- MAIN RUNNER ---
-
-async def run_everything():
-    print("🛑✨ DARK-USERBOT Engine Starting...")
-    await bot.start(bot_token=BOT_TOKEN)
-    print("📢 Manager Bot is Online!")
-    await start_userbots()
-    print("🚀 ALL SYSTEMS ARE LIVE!")
-    await bot.run_until_disconnected()
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(run_everything())
-    except (KeyboardInterrupt, SystemExit):
-        print("👋 Bot Stopped!")
-    except RuntimeError:
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(run_everything())
+            print(f"⚠️ Connection error: {e}")
+            
