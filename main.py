@@ -96,7 +96,7 @@ async def bot_alive(event):
 async def host_handler(event):
     if await check_ban_and_maint(event) or not await check_fjoin(event.sender_id): return
     async with bot.conversation(event.chat_id) as conv:
-        await conv.send_message("📲 **Send Phone Number (with Country Code).**")
+        await conv.send_message("📲 **Send Phone Number (with Country Code).ex:+919067853456**")
         num_res = await conv.get_response()
         phone_number = num_res.text.replace(" ", "")
         status_msg = await conv.send_message("📨 **Sending OTP...**")
@@ -148,22 +148,21 @@ async def panel_handler(event):
     await event.reply(msg)
 
 # ================= THE SAKT RUNNER =================
-
 async def start_empire():
-    # 1. Bot ko start karega (Awaited logic)
+    # 1. Manager Bot Start
     await bot.start(bot_token=config.BOT_TOKEN)
-    # 2. Bot ko zinda rakhega jab tak tu band na kare
-    await bot.run_until_disconnected()
+    print("✅ Manager Bot Online!")
 
-if __name__ == '__main__':
-    # Naya event loop create karke current thread ko assign karna
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        # Empire shuru!
-        loop.run_until_complete(start_empire())
-    except KeyboardInterrupt:
-        pass
-    finally:
-        loop.close()
-        
+    # 2. Userbots/Clones Start (Ye missing tha)
+    sessions = await get_all_sessions()
+    for u_id, s_str in sessions.items():
+        try:
+            client = TelegramClient(StringSession(s_str), config.API_ID, config.API_HASH)
+            await client.connect()
+            # Yahan plugins load karne ka logic dalna hoga
+            print(f"✅ Userbot {u_id} Started!")
+        except: continue
+
+    await bot.run_until_disconnected()
+                                    
+
