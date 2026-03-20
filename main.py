@@ -3,6 +3,26 @@ import asyncio
 import sys
 import glob
 import importlib.util
+from flask import Flask
+from threading import Thread
+
+app = Flask('')
+@app.route('/')
+def home():
+    return "I am alive"
+
+def run_port():
+    # Render hamesha PORT environment variable bhejta hai
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+
+def keep_alive():
+    t = Thread(target=run_port)
+    t.daemon = True
+    t.start()
+
+# Isko call kar lo
+keep_alive()
+
 from telethon import TelegramClient, events, Button
 from telethon.sessions import StringSession
 from telethon.tl.functions.channels import GetParticipantRequest
