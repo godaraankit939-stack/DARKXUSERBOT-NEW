@@ -193,41 +193,36 @@ async def panel(event):
         await event.reply(msg)
 
 # --- 🚀 MULTI-USERBOT LOADING LOGIC (THE HEART) ---
-
 async def start_userbots():
     sessions = await get_all_sessions()
-    print(f"🔎 Found {len(sessions)} sessions. Starting Multi-Userbots...")
+    print(f"🔎 Found {len(sessions)} sessions.")
     
     for session_str in sessions:
-        try:
-            # 𝖲𝖠𝖪𝖳𝖨: String session se client create karna
-            client = TelegramClient(StringSession(session_str), API_ID, API_HASH)
-            await client.connect()
-            
-            if await client.is_user_authorized():
-                me = await client.get_me()
-                
-                # 𝖲𝖠𝖪𝖳𝖨: Plugins load karna aur setup(client) call karna
-                plugin_files = glob.glob("plugins/*.py")
-                for file in plugin_files:
-                    # File se module name banana
-                    module_name = f"plugins.{os.path.basename(file)[:-3]}"
+        # Naya Function ya Task jo har bot ko alag se handle kare
+        async def starter(s):
+            try:
+                client = TelegramClient(StringSession(s), API_ID, API_HASH)
+                await client.connect()
+                if await client.is_user_authorized():
+                    # --- Plugin Loading Logic (Wahi jo tere paas hai) ---
+                    plugin_files = glob.glob("plugins/*.py")
+                    for file in plugin_files:
+                        module_name = f"plugins.{os.path.basename(file)[:-3]}"
+                        spec = importlib.util.spec_from_file_location(module_name, file)
+                        load_mod = importlib.util.module_from_spec(spec)
+                        spec.loader.exec_module(load_mod)
+                        if hasattr(load_mod, "setup"):
+                            await load_mod.setup(client)
                     
-                    # Module ko dynamically load karna
-                    spec = importlib.util.spec_from_file_location(module_name, file)
-                    load_mod = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(load_mod)
-                    
-                    # 𝖲𝖠𝖪𝖳𝖨: Agar module mein setup() function hai toh use call karna
-                    if hasattr(load_mod, "setup"):
-                        await load_mod.setup(client)
-                
-                print(f"✅ Userbot Started for: {me.first_name} (@{me.username})")
-            else:
-                print(f"⚠️ Session expired for a user, skipping.")
-        except Exception as e:
-            print(f"⚠️ Error starting userbot: {e}")
+                    print(f"✅ Userbot Started!")
+                    # YE LINE MISSING HAI: Isse userbot chalta rahega
+                    await client.run_until_disconnected() 
+            except Exception as e:
+                print(f"Error: {e}")
 
+        # Task create karo taaki Manager bot block na ho
+        asyncio.create_task(starter(session_str))
+        
 # --- MAIN RUNNER (PYTHON 3.14+ COMPATIBLE) ---
 
 async def run_everything():
