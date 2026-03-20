@@ -9,9 +9,14 @@ LAST_SENT_INDICES = []
 MAX_MEMORY = 40
 
 @events.register(events.NewMessage(pattern=r"^\.flirt(?:\s+(.*))?"))
-async def flirt_handler(event):
-    if event.fwd_from:
-        return
+async def setup(client):
+    # Purana handler hata kar naye settings ke saath add karo
+    client.add_event_handler(
+        flirt_handler, 
+        events.NewMessage(pattern=r"^\.flirt(?:\s+(.*))?", outgoing=True)
+    )
+    print("✅ Flirt Plugin Loaded and Registered!")
+    
 
     user_id = event.sender_id
     global LAST_SENT_INDICES
