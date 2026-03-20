@@ -1,126 +1,106 @@
+import os
 import random
 import requests
+import json
 from telethon import events
 
-# ================= CONFIG =================
+# --- MEMORY SYSTEM (REPEAT PREVENT) ---
+MEMORY_FILE = "meme_memory.json"
+MAX_MEMORY = 500
 
-TENOR_API_KEY = "LIVDSRZULELA"
+def load_mem():
+    if os.path.exists(MEMORY_FILE):
+        try:
+            with open(MEMORY_FILE, "r") as f:
+                return json.load(f)
+        except: return []
+    return []
 
-# 🔥 👉 TERE PURE DESI SOURCES (EXPANDED)
-SEARCH_TERMS = [
+def save_mem(url):
+    mem = load_mem()
+    mem.append(url)
+    if len(mem) > MAX_MEMORY:
+        mem.pop(0)
+    with open(MEMORY_FILE, "w") as f:
+        json.dump(mem, f)
 
-# 🎬 MOVIES
-"hera pheri babu rao meme",
-"phir hera pheri meme",
-"welcome nana patekar meme",
-"welcome uday control meme",
-"gangs of wasseypur meme",
-"munna bhai meme jadoo ki jhappi",
-"golmaal vasooli bhai meme",
-"3 idiots all is well meme",
-"dhamaal sanjay mishra meme",
-"ms dhoni movie meme",
-"lagaan meme kachra",
-"bajirao mastani meme ranveer singh",
-"singham aata majhi satakli meme",
-"gunda mithun meme",
+# --- REDDIT FETCH LOGIC ---
+SUBS = ["desimemes", "indiameme"]
 
-# 📺 WEB SERIES
-"mirzapur kaleen bhaiya meme",
-"mirzapur munna bhaiya meme",
-"sacred games gaitonde meme",
-"family man chellam sir meme",
-"panchayat binod meme",
-"scam 1992 harshad mehta meme",
-"shark tank ashneer meme",
-
-# 🎥 YOUTUBERS
-"carryminati meme",
-"bb ki vines titu mama meme",
-"ashish chanchlani meme",
-"triggered insaan meme",
-"flying beast meme",
-"hindustani bhau meme",
-"puneet superstar meme",
-"technical guruji meme",
-"sandeep maheshwari meme",
-
-# 👤 PERSONALITIES
-"narendra modi mitron meme",
-"rahul gandhi meme funny",
-"arvind kejriwal meme",
-"kamlesh soluchan meme",
-"aamir khan interview meme",
-"shashi tharoor english meme",
-
-# 📺 TV SHOWS
-"tmkoc jethalal meme",
-"tmkoc daya meme",
-"cid daya darwaza tod do meme",
-"crime patrol meme",
-"rasode mein kaun tha meme",
-"koffee with karan meme"
-]
-
-REDDIT_SUBS = [
-    "IndianDankMemes",
-    "dankinindia"
-]
-
-# ================= TENOR =================
-
-def get_tenor():
+async def fetch_media(mode="image"):
+    """mode: image or video"""
+    already_seen = load_mem()
+    sub = random.choice(SUBS)
+    # 50 memes ki request taaki filter kar sakein
+    url = f"https://meme-api.com/gimme/{sub}/50"
+    
     try:
-        query = random.choice(SEARCH_TERMS)
-        url = f"https://tenor.googleapis.com/v2/search?q={query}&key={TENOR_API_KEY}&limit=20"
+        res = requests.get(url, timeout=10).json()
+        all_memes = res.get("memes", [])
+        
+        # Filtering for Direct Media Links
+        valid = []
+        for m in all_memes:
+            link = m['url'].lower()
+            if link in already_seen:
+                continue
+            
+            # 1. IMAGE FILTER (No GIFs, only JPG/PNG)
+            if mode == "image":
+                if link.endswith(('.jpg', '.jpeg', '.png')):
+                    valid.append(m)
+            
+            # 2. VIDEO FILTER (Only Direct MP4/MKV)
+            elif mode == "video":
+                if link.endswith(('.mp4', '.mkv', '.mov')):
+                    valid.append(m)
 
-        res = requests.get(url, timeout=5).json()
-        results = res.get("results", [])
+        if valid:
+            # Hype logic: Most Upvoted pehle
+            valid.sort(key=lambda x: x.get('ups', 0), reverse=True)
+            chosen = valid[0]
+            save_mem(chosen['url'])
+            return chosen['url'], chosen['title']
+            
+    except: pass
+    return None, None
 
-        if results:
-            gif = random.choice(results)
-            return gif["media_formats"]["gif"]["url"]
+# ================= COMMANDS =================
 
-    except:
-        pass
-    return None
+# --- .meme (Only Image) ---
+@events.register(events.NewMessage(pattern=r"^\.meme$", outgoing=True))
+async def meme_img(event):
+    await event.edit("`📸 Fetching Desi Image...`")
+    url, title = await fetch_media(mode="image")
+    
+    if url:
+        try:
+            await event.client.send_file(event.chat_id, url, caption=f"**{title}**")
+            await event.delete()
+        except:
+            await event.edit("❌ Failed to send as Media. Link broken!")
+    else:
+        await event.edit("❌ No fresh image found in top 50.")
 
-# ================= REDDIT =================
-
-def get_reddit():
-    try:
-        sub = random.choice(REDDIT_SUBS)
-        url = f"https://meme-api.com/gimme/{sub}"
-
-        res = requests.get(url, timeout=5).json()
-
-        if res and "url" in res:
-            return res["url"]
-
-    except:
-        pass
-    return None
-
-# ================= COMMAND =================
-
-@events.register(events.NewMessage(pattern=r"\.meme"))
-async def meme(event):
-    await event.edit("`🔥 Desi Meme aa raha hai...`")
-
-    # 🔥 1st priority → Tenor (your categories)
-    meme = get_tenor()
-
-    # 🔥 fallback → Reddit
-    if not meme:
-        meme = get_reddit()
-
-    if meme:
-        await event.delete()
-        return await event.client.send_file(event.chat_id, meme)
-
-    await event.edit("❌ Meme nahi mila")
+# --- .vmeme (Only Video) ---
+@events.register(events.NewMessage(pattern=r"^\.vmeme$", outgoing=True))
+async def meme_vid(event):
+    await event.edit("`🎬 Fetching Hype Video...`")
+    url, title = await fetch_media(mode="video")
+    
+    if url:
+        try:
+            # send_file automatically downloads the link and sends as Video
+            await event.client.send_file(event.chat_id, url, caption=f"**{title}**")
+            await event.delete()
+        except:
+            await event.edit("❌ Video link error or too large!")
+    else:
+        await event.edit("❌ No fresh video memes available right now.")
 
 # ================= SETUP =================
 
 async def setup(client):
-    client.add_event_handler(meme)
+    client.add_event_handler(meme_img)
+    client.add_event_handler(meme_vid)
+    print("✅ Strong Reddit Media Plugin Loaded!")
