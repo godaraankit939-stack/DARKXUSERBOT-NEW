@@ -19,7 +19,24 @@ from database import (
 
 # Render fix: ensures config/database are found
 sys.path.append(os.getcwd())
+# --- 1. RENDER PORT BINDING (MANAGER KO ZINDA RAKHNE KE LIYE) ---
+app = Flask('')
+@app.route('/')
+def home():
+    return "DARK USERBOT IS LIVE"
 
+def run_port():
+    try:
+        port = int(os.environ.get('PORT', 8080))
+        app.run(host='0.0.0.0', port=port)
+    except: pass
+
+def keep_alive():
+    t = Thread(target=run_port)
+    t.daemon = True
+    t.start()
+
+keep_alive()
 # Bot Client Initialize - Manager Bot
 bot = TelegramClient('manager_session', API_ID, API_HASH)
 
