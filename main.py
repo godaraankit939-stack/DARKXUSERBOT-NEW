@@ -6,23 +6,28 @@ import importlib.util
 from flask import Flask
 from threading import Thread
 
+# 1. PEHLE FLASK (RENDER FIX)
 app = Flask('')
 @app.route('/')
 def home():
     return "I am alive"
 
 def run_port():
-    # Render hamesha PORT environment variable bhejta hai
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+    try:
+        port = int(os.environ.get('PORT', 8080))
+        app.run(host='0.0.0.0', port=port)
+    except Exception as e:
+        print(f"Flask Error: {e}")
 
 def keep_alive():
     t = Thread(target=run_port)
     t.daemon = True
     t.start()
 
-# Isko call kar lo
+# Flask ko start karo
 keep_alive()
 
+# 2. AB SARE TELETHON IMPORTS (EK SAATH)
 from telethon import TelegramClient, events, Button
 from telethon.sessions import StringSession
 from telethon.tl.functions.channels import GetParticipantRequest
@@ -30,7 +35,8 @@ from telethon.errors import (
     PhoneNumberInvalidError, PhoneCodeInvalidError, UserNotParticipantError,
     PhoneCodeExpiredError, SessionPasswordNeededError, PasswordHashInvalidError
 )
-# Config aur Database se functions uthana
+
+# 3. CONFIG & DATABASE
 from config import API_ID, API_HASH, BOT_TOKEN, START_MSG, LOGIN_SUCCESS, OWNER_ID
 from database import (
     save_session, is_sudo, ban_user, unban_user, 
@@ -38,11 +44,10 @@ from database import (
     get_all_sessions, get_sudo_list
 )
 
-# Render fix: ensures config/database are found
 sys.path.append(os.getcwd())
-
-# Bot Client Initialize - Manager Bot
 bot = TelegramClient('manager_session', API_ID, API_HASH)
+
+# --- BAAKI KA PURANA CODE (FORCE JOIN & HANDLERS) YAHAN SE SHURU KARO ---
 
 # --- FORCE JOIN CONFIG ---
 AUTH_CHATS = ["dark_uploads", -1002341933066]
