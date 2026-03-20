@@ -43,15 +43,27 @@ async def setup(client):
         if await get_maintenance() and event.sender_id != OWNER_ID and not await is_sudo(event.sender_id):
             return await event.edit("🛠 **System Status: Maintenance Mode.**")
 
-        # ✅ 4. RANDOM PICK LOGIC
-        # HOT list se random link uthayega
+                # ✅ 4. RANDOM PICK LOGIC (Video Send Fix)
         random_content = random.choice(HOT)
         
         try:
-            # Seedha link bhej dega (Telegram ise preview mein video/photo bana dega)
-            await event.edit(f"{random_content}")
+            # Pehle purane message ko delete karo ya "Processing" likho
+            await event.edit("`🎬 Sending Media...`")
+            
+            # Link ko as a video send karne ke liye send_file use karo
+            await event.client.send_file(
+                event.chat_id, 
+                random_content, 
+                caption="**🔥 Hot Content Loaded!**",
+                reply_to=event.reply_to_msg_id # Reply pe hai toh reply mein hi jayega
+            )
+            
+            # Edit kiye huye message ko delete kar do taaki kachra na dikhe
+            await event.delete()
+            
         except Exception as e:
-            # Backup agar edit fail ho jaye
-            await event.reply(f"{random_content}")
+            # Agar video send na ho paye toh link bhej do backup ke liye
+            await event.reply(f"❌ Error: `{e}`\n🔗 Link: {random_content}")
+        
 
 # ================================================
