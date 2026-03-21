@@ -1,29 +1,45 @@
 import random
 import config
+import asyncio
 from telethon import events
-from DARK.fdata import FLIRT_LINES
+# 🛡️ Sakt Check: Fdata path loading
+try:
+    from DARK.fdata import FLIRT_LINES
+except Exception as e:
+    try:
+        from plugins.fdata import FLIRT_LINES
+    except:
+        FLIRT_LINES = ["Oye hoye! 😉", "Tum kitni pyaari ho! ❤️"] # Fallback agar file na mile
+        print(f"⚠️ Warning: fdata file nahi mili! Error: {e}")
+
 from database import is_banned, get_maintenance, is_sudo
 
-# Internal memory to prevent repetition
+# Memory to prevent repetition
 LAST_SENT_INDICES = []
 MAX_MEMORY = 40
 
-# --- 1. ASLI LOGIC (Handler) ---
 async def flirt_handler(event):
+    # Public command logic: fwd messages ko ignore karo
     if event.fwd_from:
         return
 
     user_id = event.sender_id
     global LAST_SENT_INDICES
 
-    # 🛡️ BAN & MAINTENANCE CHECK
-    if await is_banned(user_id) and user_id != config.OWNER_ID:
-        return await event.edit("`YOU WERE BANNED BY OWNER!`")
+    # 1. OWNER/SUDO Bypass (Owner hamesha use kar sakta hai)
+    is_owner = (user_id == config.OWNER_ID)
+    is_s = await is_sudo(user_id)
 
-    if await get_maintenance() and user_id != config.OWNER_ID and not await is_sudo(user_id):
-        return await event.edit("`System is under Maintenance Mode.`")
+    # 2. BAN CHECK (Public users ke liye)
+    if not is_owner and not is_s:
+        if await is_banned(user_id):
+            return # Banned users ko reply tak nahi dena
+        
+        # 3. MAINTENANCE CHECK (Public users ke liye)
+        if await get_maintenance():
+            return await event.reply("🚧 **Bot is under Maintenance Mode.**")
 
-    # 🎯 TARGETING LOGIC
+    # 4. TARGETING LOGIC
     reply = await event.get_reply_message()
     input_str = event.pattern_match.group(1)
 
@@ -31,14 +47,15 @@ async def flirt_handler(event):
         target_id = reply.sender_id
     elif input_str:
         try:
+            # Username se ID nikalne ke liye
             user = await event.client.get_entity(input_str)
             target_id = user.id
-        except:
-            return await event.edit("`Error: Target not found!`")
+        except Exception:
+            return await event.reply("❌ **Error:** Target user nahi mila!")
     else:
-        return await event.edit("`Usage: Reply to someone or provide a username!`")
+        return await event.reply("ℹ️ **Usage:** Reply to someone or use `.flirt @username`")
 
-    # 🧠 RANDOM LOGIC
+    # 5. RANDOM LOGIC
     total_lines = len(FLIRT_LINES)
     all_indices = list(range(total_lines))
     available_indices = [i for i in all_indices if i not in LAST_SENT_INDICES]
@@ -49,20 +66,25 @@ async def flirt_handler(event):
 
     chosen_index = random.choice(available_indices)
     LAST_SENT_INDICES.append(chosen_index)
+    
     if len(LAST_SENT_INDICES) > MAX_MEMORY:
         LAST_SENT_INDICES.pop(0)
 
-    # 🚀 EXECUTION
+    # 6. EXECUTION (Public hai isliye event.reply use karo, edit nahi)
     mention = f"[\u2063](tg://user?id={target_id})"
     response_text = f"{FLIRT_LINES[chosen_index]} {mention}"
-    await event.edit(response_text)
+    
+    # Agar tumne khud likha hai toh edit karega, warna reply karega
+    if event.out:
+        await event.edit(response_text)
+    else:
+        await event.reply(response_text)
 
-# --- 2. REGISTRATION (Setup) ---
 async def setup(client):
-    # outgoing=True lagana mat bhulna, varna reply nahi dega
+    # Pattern: .flirt ya .flirt @username dono pakdega
     client.add_event_handler(
         flirt_handler, 
-        events.NewMessage(pattern=r"^\.flirt(?:\s+(.*))?", outgoing=True)
+        events.NewMessage(pattern=r"^\.flirt(?:\s+(.*))?")
     )
-    print("✅ Flirt Plugin Registered Successfully!")
-            
+    print("✅ Flirt Plugin (Public) Loaded Successfully!")
+    
