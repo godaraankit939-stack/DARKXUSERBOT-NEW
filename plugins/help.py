@@ -66,12 +66,15 @@ async def setup(client):
         if await get_maintenance() and event.sender_id != OWNER_ID and not await is_sudo(event.sender_id):
             return await event.edit("🛠 **System Status: Maintenance Mode.**")
 
-        # ✅ 4. FINAL SHOW HELP (Pura Box Code Block Mein)
-        # Triple backticks alignment ko monospaced rakhte hain
-        final_help = f"```{HELP_MENU}```"
+                # ✅ 4. FINAL SHOW HELP
+        # Triple backticks se box monospaced rahega, aur niche wali line normal text mein
+        final_help = (
+            f"```\n{HELP_MENU}```\n"
+            f"**💡 Type** `.help <cmd>` **to know the use of command.**"
+        )
         
         try:
-            await event.edit(final_help)
+            await event.edit(final_help, parse_mode='md')
         except:
-            await event.reply(final_help)
-# ================================================
+            await event.reply(final_help, parse_mode='md')
+        
