@@ -52,25 +52,6 @@ print("✅ Flask Server Live for Render Health Check!")
 # Render fix: ensures config/database are found
 sys.path.append(os.getcwd())
 
-# --- 1. RENDER PORT BINDING ---
-app = Flask('')
-@app.route('/')
-def home():
-    return "DARK USERBOT IS LIVE"
-
-def run_port():
-    try:
-        port = int(os.environ.get('PORT', 8080))
-        app.run(host='0.0.0.0', port=port)
-    except: pass
-
-def keep_alive():
-    t = Thread(target=run_port)
-    t.daemon = True
-    t.start()
-
-keep_alive()
-
 bot = TelegramClient('manager_session', API_ID, API_HASH)
 
 # --- 🛠️ NO ENTRY HELPERS ---
@@ -245,47 +226,52 @@ async def panel(event):
         await event.reply(msg)
 
 # --- 🚀 MULTI-USERBOT LOADING LOGIC ---
-async def start_userbots():
+running_sessions = set()
+
+async def starter(s):
     try:
-        sessions = await get_all_sessions()
+        s_str = s[1] if isinstance(s, (list, tuple)) else s
+        if s_str in running_sessions: return
+        
+        client = TelegramClient(StringSession(s_str), API_ID, API_HASH)
+        await client.connect()
+        if await client.is_user_authorized():
+            running_sessions.add(s_str)
+            me = await client.get_me()
+            print(f"✅ Userbot Started for: {me.first_name}")
+            
+            plugin_files = glob.glob("plugins/*.py")
+            for file in plugin_files:
+                try:
+                    module_name = f"plugins.{os.path.basename(file)[:-3]}"
+                    spec = importlib.util.spec_from_file_location(module_name, file)
+                    load_mod = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(load_mod)
+                    if hasattr(load_mod, "setup"):
+                        await load_mod.setup(client)
+                except: continue
+            await client.run_until_disconnected()
     except Exception as e:
-        print(f"❌ Database Error: {e}")
-        return
-    print(f"🔎 Found {len(sessions)} sessions. Starting Multi-Userbots...")
-    for session_data in sessions:
-        async def starter(s):
-            try:
-                s_str = s[1] if isinstance(s, (list, tuple)) else s
-                client = TelegramClient(StringSession(s_str), API_ID, API_HASH)
-                await client.connect()
-                if await client.is_user_authorized():
-                    me = await client.get_me()
-                    print(f"✅ Userbot Started for: {me.first_name} (@{me.username})")
-                    plugin_files = glob.glob("plugins/*.py")
-                    for file in plugin_files:
-                        try:
-                            module_name = f"plugins.{os.path.basename(file)[:-3]}"
-                            spec = importlib.util.spec_from_file_location(module_name, file)
-                            load_mod = importlib.util.module_from_spec(spec)
-                            spec.loader.exec_module(load_mod)
-                            if hasattr(load_mod, "setup"):
-                                await load_mod.setup(client)
-                        except Exception as p_err:
-                            print(f"⚠️ Plugin {file} skip: {p_err}")
-                    await client.run_until_disconnected()
-                else:
-                    print(f"⚠️ Session unauthorized/expired, skipping.")
-            except Exception as e:
-                print(f"❌ Error starting a userbot: {e}")
-        asyncio.create_task(starter(session_data))
+        print(f"❌ Error starting userbot: {e}")
 
+async def auto_load_new_sessions():
+    while True:
+        try:
+            sessions = await get_all_sessions()
+            for s in sessions:
+                asyncio.create_task(starter(s))
+        except: pass
+        await asyncio.sleep(5) # Har 30 sec mein naye logins check karega
+        
 # --- MAIN RUNNER ---
-
 async def run_everything():
     print("🛑✨ DARK-USERBOT Engine Starting...")
     await bot.start(bot_token=BOT_TOKEN)
     print("📢 Manager Bot is Online!")
-    await start_userbots()
+    
+    # Ye line naye aur purane dono sessions ko bina redeploy ke handle karegi
+    asyncio.create_task(auto_load_new_sessions())
+    
     print("🚀 ALL SYSTEMS ARE LIVE! Bot is running...")
     await bot.run_until_disconnected()
 
