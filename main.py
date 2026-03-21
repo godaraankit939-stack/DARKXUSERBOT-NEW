@@ -226,35 +226,31 @@ async def panel(event):
         await event.reply(msg)
 
 # --- 🚀 MULTI-USERBOT LOADING LOGIC ---
-running_sessions = set()
+running_sessions = set() # Isme saare active sessions ki list rahegi
 
-async def starter(s):
+async def starter(s_str):
+    # AGAR YE SESSION PEHLE SE CHAL RAHA HAI, TOH DUBARA START MAT KARO
+    if s_str in running_sessions:
+        return
+    
     try:
-        s_str = s[1] if isinstance(s, (list, tuple)) else s
-        if s_str in running_sessions: return
-        
         client = TelegramClient(StringSession(s_str), API_ID, API_HASH)
         await client.connect()
         
         if await client.is_user_authorized():
-            running_sessions.add(s_str)
+            running_sessions.add(s_str) # Ab ye session 'Running' list mein aa gaya
             me = await client.get_me()
             print(f"✅ Userbot Started for: {me.first_name}")
 
-            # --- 🛡️ MASTER FILTER START (Fixes Bugs) ---
+            # --- 🛡️ MASTER FILTER (Fixes Multiple Triggers & Access Denied) ---
             @client.on(events.NewMessage)
             async def master_filter(event):
-                # 1. Fix Multiple Trigger: Sirf apne owner ke outgoing msgs process honge
                 if not event.out:
                     raise events.StopPropagation
-
-                # 2. Fix Access Denied: Agar message '.' se shuru nahi hai, 
-                # toh plugins tak mat jaane do (Isse normal chat safe ho jayegi)
                 if not event.text or not event.text.startswith("."):
                     raise events.StopPropagation
-            # --- 🛡️ MASTER FILTER END ---
 
-            # --- 🚀 PLUGINS LOADING LOGIC (Wahi purana) ---
+            # --- 🚀 PLUGINS LOADING ---
             plugin_files = glob.glob("plugins/*.py")
             for file in plugin_files:
                 try:
@@ -267,18 +263,27 @@ async def starter(s):
                 except: continue
             
             await client.run_until_disconnected()
+            
     except Exception as e:
         print(f"❌ Error starting userbot: {e}")
+    finally:
+        # Agar bot band ho jaye, toh list se hata do taaki auto-loader ise fir se start kar sake
+        if s_str in running_sessions:
+            running_sessions.remove(s_str)
 
 async def auto_load_new_sessions():
+    print("🔄 Dynamic Loader Active: Monitoring all sessions...")
     while True:
         try:
+            # Ye database se SARE (Purane + Naye) sessions uthayega
             sessions = await get_all_sessions()
             for s in sessions:
-                # Naye logins ko turant task mein daalna
-                asyncio.create_task(starter(s))
-        except: pass
-        await asyncio.sleep(5) # sec mein check karega (Speed badha di)
+                s_str = s[1] if isinstance(s, (list, tuple)) else s
+                # Starter sirf unhe chalayega jo abhi nahi chal rahe
+                asyncio.create_task(starter(s_str))
+        except Exception as e:
+            print(f"⚠️ Loader Error: {e}")
+        await asyncio.sleep(5) # 20 second stability ke liye best hai
         
         
 # --- MAIN RUNNER ---
