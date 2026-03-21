@@ -6,8 +6,6 @@ from config import OWNER_ID
 
 # --- THE COMPLETE EMPIRE DATABASE ---
 HELP_DICT = {
-# --- THE COMPLETE EMPIRE DATABASE ---
-HELP_DICT = {
     "raid": "⚔️ **RAID HELP**\n• `.raid [count] [target]`\n• `.sraid [count] [target]`\n• `.rraid` (Reply to start)\n• `.drraid` (Stop RRAID)\n• `.fsraid` (Kill loops)",
     "spam": "🚀 **SPAM HELP**\n• `.spam [count] [text]`\n• `.dmspam [count] [target] [text]`\n• `.fsspam` (Force stop)",
     "purge": "🧹 **PURGE HELP**\n• `.purge [reply]` (All from here)\n• `.purge [count]` (Mix delete)\n• `.purge [count] [reply]` (Upward count)\n• `.purgemy [count]` (Only your msgs)",
