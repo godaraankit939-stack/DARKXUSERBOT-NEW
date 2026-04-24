@@ -84,7 +84,7 @@ async def bot_alive(event):
     if await is_banned(event.sender_id): return
     await event.reply("✨ **DARK MANAGER IS LIVE**\nStatus: `Running` 🚀")
 
-# --- HOSTING & CLONE (As it is) ---
+# --- HOSTING & CLONE ---
 @bot.on(events.NewMessage(pattern='/host'))
 async def host_handler(event):
     if await is_banned(event.sender_id): return
@@ -131,11 +131,9 @@ async def host_handler(event):
         await save_session(user_id, session_str)
         
         await status_msg.edit(f"✅ **Login Successful!**\n\n**String Session:**\n`{session_str}`")
-        # Naya message for instructions
         await conv.send_message(f"{LOGIN_SUCCESS}\n\n**Save this string to auto login with /clone cmd**")
         await client.disconnect()
 
-# --- 🚀 CLONE COMMAND ---
 @bot.on(events.NewMessage(pattern='/clone'))
 async def clone_cmd(event):
     if await is_banned(event.sender_id) or await is_maint(event.sender_id): return
@@ -193,7 +191,6 @@ async def maint(event):
 
 @bot.on(events.NewMessage(pattern='/panel'))
 async def panel(event):
-    # Sirf Owner ke liye as per your code
     if event.sender_id == OWNER_ID:
         sessions = await get_all_sessions()
         sudo_list = await get_sudo_list()
@@ -207,7 +204,7 @@ async def panel(event):
         )
         await event.reply(msg)
 
-# --- 🚀 MULTI-USERBOT LOADING LOGIC (FIXED) ---
+# --- 🚀 MULTI-USERBOT LOADING LOGIC ---
 running_sessions = set()
 
 async def starter(s_str):
@@ -221,23 +218,20 @@ async def starter(s_str):
             me = await client.get_me()
             print(f"✅ Userbot Started for: {me.first_name}")
 
-                        # --- 🛡️ MASTER FILTER (Double Response Fix) ---
+            # --- 🛡️ MASTER FILTER (Double Response Fix) ---
             @client.on(events.NewMessage)
             async def master_filter(event):
                 # FIXED: Check karo ki message bhejnewala wahi client hai ya nahi
-                me = await client.get_me()
-                if event.sender_id != me.id:
-                    # Agar message bahar se aaya hai (AFK ke liye useful)
+                me_id = (await client.get_me()).id
+                if event.sender_id != me_id:
                     if not event.out:
                         return 
-                    # Agar message kisi aur ka hai toh yahan stop kar do
                     raise events.StopPropagation
 
-                # Magic/Auto-TR Fix: Bina dot wale messages bypass hone do
                 if event.out and not event.text.startswith("."):
                     return
                     
- # --- 🚀 PLUGINS LOADING ---
+            # --- 🚀 PLUGINS LOADING ---
             plugin_files = glob.glob("plugins/*.py")
             for file in plugin_files:
                 try:
@@ -263,7 +257,7 @@ async def auto_load_new_sessions():
                 s_str = s[1] if isinstance(s, (list, tuple)) else s
                 asyncio.create_task(starter(s_str))
         except: pass
-        await asyncio.sleep(5) # Railway ki stability ke liye 20s best hai
+        await asyncio.sleep(20)
         
 # --- MAIN RUNNER ---
 async def run_everything():
