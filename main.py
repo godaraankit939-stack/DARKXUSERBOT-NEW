@@ -191,7 +191,7 @@ async def auto_load_new_sessions():
                 s_str = s[1] if isinstance(s, (list, tuple)) else s
                 asyncio.create_task(starter(s_str))
         except: pass
-        await asyncio.sleep(20) # Railway ki stability ke liye 20s best hai
+        await asyncio.sleep(5) # Railway ki stability ke liye 20s best hai
         
 # --- MAIN RUNNER ---
 async def run_everything():
