@@ -114,22 +114,18 @@ async def host_handler(event):
         try:
             await client.sign_in(phone_number, otp)
         except SessionPasswordNeededError:
-            await status_msg.edit("🔐 **2FA detected.** Send your password:")
+            # Edit ki jagah naya message bheja hai
+            await conv.send_message("🔐 **2FA detected.** Send your password:")
             pwd = await conv.get_response()
             try:
                 await client.sign_in(password=pwd.text)
             except:
-                await status_msg.edit("❌ **Wrong Password.**")
+                await conv.send_message("❌ **Wrong Password.**")
                 return
         except Exception as e:
-            await status_msg.edit(f"❌ **Login Failed:** `{e}`")
+            await conv.send_message(f"❌ **Login Failed:** `{e}`")
             return
             
-        session_str = client.session.save()
-        user_info = await client.get_me()
-        user_id = user_info.id
-        await save_session(user_id, session_str)
-        
         await status_msg.edit(f"✅ **Login Successful!**\n\n**String Session:**\n`{session_str}`")
         await conv.send_message(f"{LOGIN_SUCCESS}\n\n**Save this string to auto login with /clone cmd**")
         await client.disconnect()
