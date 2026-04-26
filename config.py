@@ -20,8 +20,10 @@ START_MSG = """
 **𝗔𝘃𝗮𝗶𝗹𝗮𝗯𝗹𝗲 𝗖𝗼𝗺𝗺𝗮𝗻𝗱𝘀:**
 ⚡ /host - Login via OTP
 ⚡ /clone - Login via String
+⚡ /bhost - Login via bot
 ⚡ /alive - Check Bot Status
 ⚡ /panel - Admin Control Panel
+⚡ /guide - Guide for userbot 
 """
 
 LOGIN_SUCCESS = """
