@@ -258,7 +258,7 @@ async def panel(event):
 # --- 🚀 MULTI-USERBOT LOADING LOGIC ---
 running_sessions = set()
 
-async def starter(s_str):
+async async def starter(s_str):
     if s_str in running_sessions:
         return
     try:
@@ -269,6 +269,7 @@ async def starter(s_str):
             me = await client.get_me()
             print(f"✅ Started: {me.first_name}")
 
+            # --- 🛡️ MASTER FILTER ---
             @client.on(events.NewMessage)
             async def master_filter(event):
                 if not event.out and event.text and event.text.startswith("."):
@@ -279,6 +280,7 @@ async def starter(s_str):
                     raise events.StopPropagation
                 if event.out and not event.text.startswith("."): return
                     
+            # --- 🚀 PLUGINS LOADING ---
             plugin_files = glob.glob("plugins/*.py")
             for file in plugin_files:
                 try:
@@ -286,13 +288,17 @@ async def starter(s_str):
                     spec = importlib.util.spec_from_file_location(module_name, file)
                     load_mod = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(load_mod)
-                    if hasattr(load_mod, "setup"): await load_mod.setup(client)
+                    if hasattr(load_mod, "setup"): 
+                        await load_mod.setup(client)
                 except: continue
             
             await client.run_until_disconnected()
-    except: pass
+    except: 
+        pass
     finally:
-        if s_str in running_sessions: running_sessions.remove(s_str)
+        # SAKT CLEANUP: Agar bot band ho toh list se hatao taaki loader use firse chalu kar sake
+        if s_str in running_sessions:
+            running_sessions.remove(s_str)
 
 async def auto_load_new_sessions():
     while True:
