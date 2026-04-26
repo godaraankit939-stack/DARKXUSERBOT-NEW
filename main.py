@@ -300,9 +300,13 @@ async def auto_load_new_sessions():
             sessions = await get_all_sessions()
             for s in sessions:
                 s_str = s[1] if isinstance(s, (list, tuple)) else s
+                # AGAR SESSION PEHLE SE CHAL RAHA HAI TO SKIP KARO
+                if s_str in running_sessions:
+                    continue
                 asyncio.create_task(starter(s_str))
         except: pass
         await asyncio.sleep(5)
+        
         
 # --- MAIN RUNNER ---
 async def set_menu():
