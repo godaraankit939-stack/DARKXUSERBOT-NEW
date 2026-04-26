@@ -179,9 +179,9 @@ async def host_handler(event):
         user_id = user_info.id
         
         await client.disconnect()
+        await asyncio.sleep(2) 
         await save_session(user_id, session_str)
-        await status_msg.delete()
-            
+           
         await conv.send_message(f"✅ **Login Successful!**\n\n**String Session:**\n`{session_str}`\n\n**Save this string to auto login with /clone cmd**")
         await conv.send_message(LOGIN_SUCCESS)
 
