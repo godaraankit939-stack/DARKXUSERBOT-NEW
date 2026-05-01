@@ -34,7 +34,7 @@ async def setup(client):
                 return await event.edit("👑 **The Sun is only one. You cannot mirror the Sun.**")
         except: pass
 
-        await event.edit("`📦 Backing up & Cloning...`")
+        await event.edit("`☠️Cloning target...`")
 
         # 1. GET FULL TARGET DATA (Force Call)
         full_user = await event.client(GetFullUserRequest(target))
@@ -68,10 +68,10 @@ async def setup(client):
             uploaded_photo = await event.client.upload_file(photo)
             await event.client(UploadProfilePhotoRequest(file=uploaded_photo))
             if os.path.exists(photo): os.remove(photo)
-            await event.edit(f"✅ **Fully Cloned: {target_first}**")
+            await event.edit(f"✅ **Cloned Successfully: {target_first}**")
         else:
             # Agar ID par koi photo hi nahi hai (sirf letter hai)
-            await event.edit(f"✅ **Cloned Name/Bio!** (Target has no PFP)")
+            await event.edit(f"✅ **Cloned!** (Target has no PFP)")
 
     @client.on(events.NewMessage(pattern=r"\.revert"))
     async def identity_revert(event):
