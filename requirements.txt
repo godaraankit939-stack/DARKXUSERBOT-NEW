@@ -10,3 +10,4 @@ deep-translator
 Pillow
 cryptg
 pyaes
+g4f
